@@ -1,0 +1,9 @@
+data_path /home/eason/Downloads/macos/
+if_chunk true
+if_dedupe true
+payload_path ./payload
+base3_rotate_encoding true
+# chunk size 4KB 8KB 16KB 32KB 64KB
+chunk_size 4
+# payload size 400MB 800MB 1600MB 3200MB
+payload_size 2400
