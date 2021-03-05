@@ -116,7 +116,7 @@ void DNA_encoder::chunking_encode(){
     uint8_t buf[1024*1024];
     struct rabin_t *hash;
     hash = rabin_init();
-    long chunk_num=g_payload_size*1024/g_chunk_size;
+    long long int chunk_num=g_payload_size*1024*1024/g_chunk_size;
     //go over all files to chunking and encoding
     FILE *fp;
     for(auto n:all_files_){
