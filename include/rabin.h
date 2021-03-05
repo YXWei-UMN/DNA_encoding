@@ -10,8 +10,8 @@
 #define POLYNOMIAL_DEGREE 53
 #define WINSIZE 64
 #define AVERAGE_BITS 20
-#define MINSIZE (2*1024)
-#define MAXSIZE (4.1*1024)
+#define MINSIZE (64)
+#define MAXSIZE (64)
 
 struct rabin_t {
     uint8_t window[WINSIZE];

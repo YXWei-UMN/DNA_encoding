@@ -129,10 +129,13 @@ void DNA_encoder::chunking_encode(){
 
             while (1) {
                 // remaining is the length of cut chunk
-                int remaining = rabin_next_chunk(hash, ptr, len);
+                /*
+                 * int remaining = rabin_next_chunk(hash, ptr, len);
                 if (remaining < 0) {
                     break;
-                }
+                }*/
+                if (len<64) break;
+                int remaining = 64;
                 total_chunks_++;
                 len -= remaining;
                 ptr += remaining;
