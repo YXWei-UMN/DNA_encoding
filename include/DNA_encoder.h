@@ -23,6 +23,9 @@ public:
     void listFiles(string baseDir, bool recursive);
     // if apply chunking, may have dedupe inside it
     void chunking_encode();
+    //first translate to nt sequence and then stranding
+    void encoding_stranding();
+    void encoding();
     // encode a payload sequence in base 3 with rotate manner
     string base3_rotate_encoding(string digital_data);
     void initial_rotating_encoding_table();
@@ -33,7 +36,7 @@ public:
     unsigned int total_chunks_ = 0;
     size_t bytes=0;
     vector<unordered_map<string,string>> rotating_encoding_table_;
-    string last_bit = "A"; // used for the fist rotating encoding
+    string last_bit = "T"; // used for the fist rotating encoding
 };
 
 

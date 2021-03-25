@@ -13,6 +13,7 @@ bool g_if_chunk;
 bool g_base3_rotate_encoding;
 long g_payload_size;
 long g_chunk_size;
+long g_strand_length;
 int Parse(string cfgfile){
     ifstream filestream(cfgfile, ios_base::in);
     if (filestream.fail()) {
@@ -33,6 +34,9 @@ int Parse(string cfgfile){
         switch(hash_(key.c_str())){
             case hash_("chunk_size"):
                 g_chunk_size = stol(value);
+                break;
+            case hash_("strand_length"):
+                g_strand_length = stol(value);
                 break;
             case hash_("payload_size"):
                 g_payload_size = stol(value);

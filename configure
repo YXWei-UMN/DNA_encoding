@@ -1,9 +1,11 @@
-data_path /home/eason/Downloads/macos/
+data_path /home/eason/CLionProjects/DNA_encoding/data/
 if_chunk true
 if_dedupe false
-payload_path ./payload
+payload_path ./payload200
 base3_rotate_encoding true
 # chunk size 64 Bytes
 chunk_size 64
+# strand length 180/190/200/210/220 nt
+strand_length 200
 # payload size 400MB 800MB 1600MB 3200MB
 payload_size 100000

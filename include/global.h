@@ -40,7 +40,7 @@ extern bool g_if_dedupe;
 extern bool g_base3_rotate_encoding;
 extern long g_payload_size;
 extern long g_chunk_size;
-
+extern long g_strand_length;
 
 
 int Parse(string cfgfile);
