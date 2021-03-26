@@ -36,7 +36,7 @@ public:
     unsigned int total_chunks_ = 0;
     size_t bytes=0;
     vector<unordered_map<string,string>> rotating_encoding_table_;
-    string last_bit = "T"; // used for the fist rotating encoding
+    string last_bit = "C"; // used for the fist rotating encoding
 };
 
 

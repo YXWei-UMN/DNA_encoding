@@ -89,11 +89,11 @@ string DNA_encoder::base3_rotate_encoding(string digital_data) {
         string ternary_num = convert(num);
         //in case the termary number has less than 6 bits
         // 6 bits ternary cover 8 bits binary
-        if (ternary_num.size()<6){
+        /*if (ternary_num.size()<6){
             for (int j = ternary_num.size(); j < 6; j++){
                 ternary_num="0"+ternary_num;
             }
-        }
+        }*/
 
         for(int j = 0; j<ternary_num.size(); j++){
             int bit = stoi(to_string(ternary_num[j]))-48;
@@ -102,6 +102,7 @@ string DNA_encoder::base3_rotate_encoding(string digital_data) {
             result+=last_bit;
         }
     }
+
     return result;
 }
 
@@ -198,29 +199,34 @@ void DNA_encoder::encoding(){
     // create payload file to store encoded strands
     fstream payload_file;
     payload_file.open(g_payload_path,ios::out);
-    payload_file<<">payload"<<0<<endl;
+    long int strand_num=0;
     //create chunking buffer and related structure
     uint8_t buf[1024*1024];
     long long int chunk_num=g_payload_size*1024*1024/g_chunk_size;
     //go over all files to chunking and encoding
     FILE *fp;
-
+    string nt_sequence;
     for(auto n:all_files_){
         fp = fopen(n.c_str(), "r");
         if (fp==NULL) {fputs ("File open error",stderr); exit (1);}
-
         while ( !feof(fp) ) {
             size_t len = fread(buf, 1, sizeof(buf), fp);
             uint8_t *ptr = &buf[0];
 
             string digital_data ((char*)ptr,len);
-            string nt_sequence;
+
             if(g_base3_rotate_encoding)
-                nt_sequence=base3_rotate_encoding(digital_data);
+                nt_sequence+=base3_rotate_encoding(digital_data);
             else
                 cout<<"no encoding scheme"<<endl;
 
-            payload_file<<nt_sequence;
+            while (nt_sequence.size()>=200){
+                string strand = nt_sequence.substr(0, 200);
+                payload_file<<">payload"<<strand_num++<<endl;
+                payload_file<<strand<<endl;
+                nt_sequence.erase(0, 200);
+            }
+
         }
         fclose(fp);
     }
