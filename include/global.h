@@ -29,6 +29,8 @@
 #include <set>
 #include <unordered_set>
 #include <queue>
+#include <cstdlib>
+#include <ctime>
 using namespace std;
 
 #define PRIMER_CAPACITY 736
@@ -37,11 +39,13 @@ extern string g_data_path;
 extern string g_payload_path;
 extern bool g_if_chunk;
 extern bool g_if_dedupe;
+extern bool g_if_mapping;
+extern bool g_if_randomization;
 extern bool g_base3_rotate_encoding;
 extern long g_payload_size;
 extern long g_chunk_size;
 extern long g_strand_length;
-
+extern int g_permutation_granularity;
 
 int Parse(string cfgfile);
 

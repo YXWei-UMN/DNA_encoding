@@ -29,6 +29,12 @@ public:
     // encode a payload sequence in base 3 with rotate manner
     string base3_rotate_encoding(string digital_data);
     void initial_rotating_encoding_table();
+    void randomize_XOR(string& digital_data);
+    string swap(string strand);
+    string mapping(string strand);
+
+
+    string pseudo_random_sequence_;
     vector<string> all_files_;
 
     unordered_set<uint64_t> chunk_index_;

@@ -18,6 +18,5 @@ int main(int argc, char** argv) {
 
     DNA_encoder dnaEncoder;
 
-
     return 0;
 }

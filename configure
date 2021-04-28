@@ -1,11 +1,20 @@
+#data_path /home/eason/Dropbox/Hash/
 data_path /home/eason/CLionProjects/DNA_encoding/data/
-if_chunk true
-if_dedupe false
-payload_path ./payload200
+
+payload_path ./random_C_200strand_3
 base3_rotate_encoding true
-# chunk size 64 Bytes
-chunk_size 64
+
 # strand length 180/190/200/210/220 nt
 strand_length 200
+
+if_mapping false
+if_randomization true
+# 1 3 5 7, 0 means no permutation
+permutation_granularity 0
+
+if_chunk true
+if_dedupe false
+# chunk size 64 Bytes
+chunk_size 64
 # payload size 400MB 800MB 1600MB 3200MB
 payload_size 100000

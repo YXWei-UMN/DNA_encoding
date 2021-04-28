@@ -89,11 +89,11 @@ string DNA_encoder::base3_rotate_encoding(string digital_data) {
         string ternary_num = convert(num);
         //in case the termary number has less than 6 bits
         // 6 bits ternary cover 8 bits binary
-        /*if (ternary_num.size()<6){
+        if (ternary_num.size()<6){
             for (int j = ternary_num.size(); j < 6; j++){
                 ternary_num="0"+ternary_num;
             }
-        }*/
+        }
 
         for(int j = 0; j<ternary_num.size(); j++){
             int bit = stoi(to_string(ternary_num[j]))-48;
@@ -194,15 +194,14 @@ void DNA_encoder::chunking_encode(){
     payload_file.close();
 }
 
-// no stranding
+// no strand
 void DNA_encoder::encoding(){
     // create payload file to store encoded strands
     fstream payload_file;
     payload_file.open(g_payload_path,ios::out);
-    long int strand_num=0;
+    payload_file<<">payload0"<<endl;
     //create chunking buffer and related structure
     uint8_t buf[1024*1024];
-    long long int chunk_num=g_payload_size*1024*1024/g_chunk_size;
     //go over all files to chunking and encoding
     FILE *fp;
     string nt_sequence;
@@ -214,6 +213,88 @@ void DNA_encoder::encoding(){
             uint8_t *ptr = &buf[0];
 
             string digital_data ((char*)ptr,len);
+
+            if(g_base3_rotate_encoding)
+                nt_sequence=base3_rotate_encoding(digital_data);
+            else
+                cout<<"no encoding scheme"<<endl;
+            payload_file<<nt_sequence;
+        }
+        fclose(fp);
+    }
+    payload_file.close();
+}
+
+string DNA_encoder::swap(string strand) {
+    if (g_permutation_granularity==0) return strand;
+
+    for (int i = 0; i < strand.size()-2*g_permutation_granularity; i+=2*g_permutation_granularity) {
+        int first = i;
+        int second = i+g_permutation_granularity;
+
+        string first_half=strand.substr(first,g_permutation_granularity);
+        string second_half=strand.substr(second,g_permutation_granularity);
+        // start point, len, const string
+        strand.replace(first,g_permutation_granularity,second_half);
+        strand.replace(second,g_permutation_granularity,first_half);
+    }
+    return strand;
+}
+
+string DNA_encoder::mapping(string strand) {
+    string result;
+    for (int i = 0; i < strand.size(); i++) {
+        char nt = strand[i];
+        /*mapping
+        A -> A
+        T -> T
+        G -> C
+        C -> G
+        */
+        if (nt == 'A') nt='T';
+        else if(nt == 'T') nt='A';
+        if (nt == 'C') nt='G';
+        else if(nt == 'G') nt='C';
+        result+=nt;
+    }
+    return result;
+}
+
+void DNA_encoder::randomize_XOR(string &digital_data) {
+    for(int i=0; i<digital_data.size(); i+=pseudo_random_sequence_.size()){
+        string original=digital_data.substr(i,pseudo_random_sequence_.size());
+        string new_str;
+        for (int j = 0; j < pseudo_random_sequence_.size(); ++j) {
+            new_str+=original[j]^pseudo_random_sequence_[j];
+        }
+        digital_data.replace(i,pseudo_random_sequence_.size(),new_str);
+    }
+}
+
+// fixed 200 strand
+void DNA_encoder::encoding_stranding(){
+    // create payload file to store encoded strands
+    fstream payload_file;
+    payload_file.open(g_payload_path,ios::out);
+    long int strand_num=0;
+    //create chunking buffer and related structure
+    uint8_t buf[1024*1024];
+    //go over all files to chunking and encoding
+    FILE *fp;
+    string nt_sequence;
+    for(auto n:all_files_){
+        fp = fopen(n.c_str(), "r");
+        if (fp==NULL) {fputs ("File open error",stderr); exit (1);}
+        while ( !feof(fp) ) {
+            size_t len = fread(buf, 1, sizeof(buf), fp);
+            uint8_t *ptr = &buf[0];
+
+            string digital_data ((char*)ptr,len);
+
+            if (g_if_randomization){
+                // randomize digital data (XOR)
+                randomize_XOR(digital_data);
+            }
 
             if(g_base3_rotate_encoding)
                 nt_sequence+=base3_rotate_encoding(digital_data);
@@ -222,59 +303,23 @@ void DNA_encoder::encoding(){
 
             while (nt_sequence.size()>=200){
                 string strand = nt_sequence.substr(0, 200);
+                //string permutated_strand = swap(strand);
                 payload_file<<">payload"<<strand_num++<<endl;
-                payload_file<<strand<<endl;
+                if (g_if_mapping){
+                    string permutated_strand = mapping(strand);
+                    payload_file<<permutated_strand<<endl;
+                } else if(g_permutation_granularity>0){
+                    string permutated_strand = swap(strand);;
+                    payload_file<<permutated_strand<<endl;
+                } else
+                    payload_file<<strand<<endl;
+
                 nt_sequence.erase(0, 200);
             }
 
         }
         fclose(fp);
     }
-    payload_file.close();
-}
-
-void DNA_encoder::encoding_stranding(){
-    // create payload file to store encoded strands
-    fstream payload_file;
-    payload_file.open(g_payload_path,ios::out);
-
-    //create chunking buffer and related structure
-    uint8_t buf[1024*1024];
-    long long int chunk_num=g_payload_size*1024*1024/g_chunk_size;
-    //go over all files to chunking and encoding
-    FILE *fp;
-    string nt_sequence;
-    for(auto n:all_files_){
-        fp = fopen(n.c_str(), "r");
-        if (fp==NULL) {fputs ("File open error",stderr); exit (1);}
-
-        while ( !feof(fp) ) {
-            size_t len = fread(buf, 1, sizeof(buf), fp);
-            uint8_t *ptr = &buf[0];
-
-            string digital_data ((char*)ptr,len);
-            if(g_base3_rotate_encoding)
-                nt_sequence+=base3_rotate_encoding(digital_data);
-            else
-                cout<<"no encoding scheme"<<endl;
-
-            int remain_pos = nt_sequence.length();
-            while (remain_pos > g_strand_length) {
-                payload_file<<">payload"<<to_string(distinct_chunks_++)<<endl;
-                payload_file<<nt_sequence.substr(nt_sequence.length()-remain_pos,g_strand_length)<<endl;
-                remain_pos-=g_strand_length;
-            }
-            // keep remain nt_sequence for next iteration
-            nt_sequence=nt_sequence.substr(remain_pos);
-
-            if (distinct_chunks_ >= chunk_num){
-                break;
-            }
-            }
-        fclose(fp);
-        }
-
-    cout<<distinct_chunks_<<" number of strands"<<endl;
     payload_file.close();
 }
 
@@ -319,19 +364,21 @@ void DNA_encoder::initial_rotating_encoding_table() {
     bit_value_2.emplace(G,C);
     rotating_encoding_table_.push_back(bit_value_2);
 }
+
 DNA_encoder::DNA_encoder() {
+    // generate 267-length pseudo random. 200 ternary code is 266.6 binary code (6:8)
+    srand(std::time(nullptr)); // use current time as seed for random generator
+    for (int n=0; n < 267; ++n) {
+        pseudo_random_sequence_+=std::rand()%2;
+    }
+
+
     // record all file's path
     listFiles(g_data_path, true);
 
     //initial rotating_encoding_table
     initial_rotating_encoding_table();
 
-    //chunk and/or encode
-    if (g_if_chunk){
-        //chunking_encode();
-        //encoding_stranding();
-        encoding();
-    } else {
-        cout<<"object encoding without chunking, not complete yet~"<<endl;
-    }
+    //encoding();
+    encoding_stranding();
 }

@@ -10,10 +10,13 @@ string g_data_path;
 string g_payload_path;
 bool g_if_dedupe;
 bool g_if_chunk;
+bool g_if_mapping;
+bool g_if_randomization;
 bool g_base3_rotate_encoding;
 long g_payload_size;
 long g_chunk_size;
 long g_strand_length;
+int g_permutation_granularity;
 int Parse(string cfgfile){
     ifstream filestream(cfgfile, ios_base::in);
     if (filestream.fail()) {
@@ -32,6 +35,9 @@ int Parse(string cfgfile){
         getline(ss, value, ' ');
 
         switch(hash_(key.c_str())){
+            case hash_("permutation_granularity"):
+                g_permutation_granularity = stoi(value);
+                break;
             case hash_("chunk_size"):
                 g_chunk_size = stol(value);
                 break;
@@ -48,6 +54,12 @@ int Parse(string cfgfile){
                 g_payload_path = value;
                 break;
             case hash_("if_dedupe"):
+                g_if_dedupe = (value=="true");
+                break;
+            case hash_("if_randomization"):
+                g_if_randomization = (value=="true");
+                break;
+            case hash_("if_mapping"):
                 g_if_dedupe = (value=="true");
                 break;
             case hash_("if_chunk"):
