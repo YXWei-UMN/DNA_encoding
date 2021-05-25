@@ -9,12 +9,9 @@ strand_length 200
 
 if_mapping false
 if_randomization true
-# 1 3 5 7, 0 means no permutation
-permutation_granularity 0
 
-if_chunk true
-if_dedupe false
-# chunk size 64 Bytes
-chunk_size 64
+# 1 3 5 7, 0 means no swap
+swap_granularity 0
+
 # payload size 400MB 800MB 1600MB 3200MB
 payload_size 100000

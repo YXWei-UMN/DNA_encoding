@@ -45,7 +45,7 @@ extern bool g_base3_rotate_encoding;
 extern long g_payload_size;
 extern long g_chunk_size;
 extern long g_strand_length;
-extern int g_permutation_granularity;
+extern int g_swap_granularity;
 
 int Parse(string cfgfile);
 

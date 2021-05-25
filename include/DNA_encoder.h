@@ -5,7 +5,6 @@
 #ifndef DNA_ENCODING_DNA_ENCODER_H
 #define DNA_ENCODING_DNA_ENCODER_H
 #include "global.h"
-#include "rabin.h"
 #include <iostream>
 #include <string>
 #include <dirent.h>
@@ -13,26 +12,23 @@
 #include <errno.h>
 #include <bitset>
 
+
+
 class DNA_encoder {
 public:
     DNA_encoder();
     ~DNA_encoder(){}
 
-
-    static bool isDir(string dir);
-    void listFiles(string baseDir, bool recursive);
-    // if apply chunking, may have dedupe inside it
-    void chunking_encode();
     //first translate to nt sequence and then stranding
     void encoding_stranding();
-    void encoding();
+    // translate to nt sequence, without strand
+    void encoding_no_strand();
+
     // encode a payload sequence in base 3 with rotate manner
     string base3_rotate_encoding(string digital_data);
     void initial_rotating_encoding_table();
     void randomize_XOR(string& digital_data);
-    string swap(string strand);
-    string mapping(string strand);
-
+    void listFiles(string baseDir, bool recursive);
 
     string pseudo_random_sequence_;
     vector<string> all_files_;
