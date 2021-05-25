@@ -23,6 +23,8 @@ public:
     void encoding_stranding();
     // translate to nt sequence, without strand
     void encoding_no_strand();
+    // translate to nt sequence in file level (1 file 1 strand)
+    void encoding_file();
 
     // encode a payload sequence in base 3 with rotate manner
     string base3_rotate_encoding(string digital_data);

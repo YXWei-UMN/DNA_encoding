@@ -1,7 +1,8 @@
 #data_path /home/eason/Dropbox/Hash/
-data_path /home/eason/CLionProjects/DNA_encoding/data/
+#data_path /home/eason/CLionProjects/DNA_encoding/data/
+data_path /home/eason/CLionProjects/DNA_encoding/linux_kernel/
 
-payload_path ./random_C_200strand_3
+payload_path ./linux_file_200strand
 base3_rotate_encoding true
 
 # strand length 180/190/200/210/220 nt
