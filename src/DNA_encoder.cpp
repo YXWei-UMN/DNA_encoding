@@ -5,6 +5,7 @@
 #include "DNA_encoder.h"
 #include "tool.h"
 #include "transformation.h"
+#include <cstdlib>
 
 //TODO other three code
 //TODO their ECC code
@@ -17,32 +18,12 @@ string DNA_encoder::base3_rotate_encoding(string digital_data) {
     {
         //cover from binary to decimal
         bitset<8> bits(digital_data.c_str()[i]);
-        int base = 1;
-        int num = 0;
-        for (int j = 7; j >=0; --j) {
-            num += base*bits[j];
-            base*=2;
-        }
-
-        //covert to ternary number, defined in tool.h
-        string ternary_num = convert(num);
-
-        //in case the termary number has less than 6 bits
-        // 6 bits ternary cover 8 bits binary
-        if (ternary_num.size()<6){
-            for (int j = ternary_num.size(); j < 6; j++){
-                ternary_num="0"+ternary_num;
-            }
-        }
-
-        // base 3 rotate encoding
-        for(int j = 0; j<ternary_num.size(); j++){
-            int bit = stoi(to_string(ternary_num[j]))-48;
-            // rotating_encoding_table_ is predifined when initialize DNA_encoder class
-            unordered_map<string,string> table = rotating_encoding_table_[bit];
-            // first nt is define is predifined in DNA_encoder.h as string last_bit
-            last_bit=table[last_bit];
+        int decimal = bits.to_ulong();
+        //covert to ternary & rotate encoding
+        for (int i=0; i<6; i++){
+            last_bit=rotating_encoding_table_[decimal%3][last_bit];
             result+=last_bit;
+            decimal/=3;
         }
     }
     return result;

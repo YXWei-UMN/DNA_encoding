@@ -3,5 +3,6 @@ project(DNA_encoding)
 include_directories(./include)
 aux_source_directory(./src DIR_SRCS)
 set(CMAKE_CXX_STANDARD 11)
-
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
 add_executable(DNA_encoding main.cpp src/global.cpp src/DNA_encoder.cpp include/DNA_encoder.h include/tool.h include/transformation.h)
