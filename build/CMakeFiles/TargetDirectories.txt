@@ -1,3 +1,0 @@
-/home/wang9467/DNA/DNA_encoding/build/CMakeFiles/rebuild_cache.dir
-/home/wang9467/DNA/DNA_encoding/build/CMakeFiles/edit_cache.dir
-/home/wang9467/DNA/DNA_encoding/build/CMakeFiles/DNA_encoding.dir
