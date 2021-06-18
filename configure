@@ -1,15 +1,22 @@
-data_path /home/eason/Dropbox/Hash/
+#data_path /home/eason/Dropbox/Hash/
+#data_path /home/wang9467/DNA/DNA_encoding/encoding_files/
+data_path /home/umhadmin/wenlong/DNA_encoding/encoding_files/
 #data_path /home/eason/CLionProjects/DNA_encoding/data/
 #data_path /home/eason/CLionProjects/DNA_encoding/linux_kernel/
 
-payload_path ./profiler
-base3_rotate_encoding true
+
+#payload_path /home/wang9467/DNA/DNA_encoding/payload_files/
+payload_path /home/umhadmin/wenlong/DNA_encoding/payload_files/
+
+#payload_path ./profiler
+base3_rotate_encoding false
+FEC_encoding true
 
 # strand length 180/190/200/210/220 nt
 strand_length 200
 
 if_mapping false
-if_randomization true
+if_randomization false
 
 # 1 3 5 7, 0 means no swap
 swap_granularity 0

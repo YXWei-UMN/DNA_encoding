@@ -42,6 +42,7 @@ extern bool g_if_dedupe;
 extern bool g_if_mapping;
 extern bool g_if_randomization;
 extern bool g_base3_rotate_encoding;
+extern bool g_FEC_encoding;
 extern long g_payload_size;
 extern long g_chunk_size;
 extern long g_strand_length;
