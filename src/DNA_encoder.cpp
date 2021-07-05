@@ -56,6 +56,31 @@ string DNA_encoder::FEC_encoding(string digital_data) {
     return result;
 }
 
+//RS_encoding
+string ReedSolomon_encoding(string digital_data) {
+    if (digital_data.size() % 2 != 0){
+        digital_data = digital_data + '\0';
+    } else {
+        // step 1: convert form 256^2 to 47^3
+        string result(digital_data.size()/2*3, '\0');
+        for(int i = 0, j = 0; i < digital_data.size(); i += 2, j += 3) {
+            char bit0 = digital_data[i];
+            char bit1 = digital_data[i+1];
+            int num = bit0 * 256 + bit1;
+
+            result[j+2] = num % 47;
+            num /= 47;
+            result[j+1] = num % 47;
+            num /= 47;
+            result[j] = num % 47;
+            num /= 47;
+            assert(num == 0);
+        }
+
+        
+    }
+}
+
 
 //TODO their ECC code
 
