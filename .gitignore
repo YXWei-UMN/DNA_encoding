@@ -1,2 +1,12 @@
 # Project exclude paths
 /cmake-build-debug/
+
+/.vscode/
+
+/build/
+
+/encoding_files/
+
+/payload/
+
+/src/test*
