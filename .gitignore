@@ -7,6 +7,8 @@
 
 /encoding_files/
 
-/payload/
+/payload_files/
 
-/src/test*
+/test*
+
+/src/test.cpp

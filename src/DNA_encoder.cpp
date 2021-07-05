@@ -244,23 +244,28 @@ void DNA_encoder::encoding_file(){
 // no strand
 // it's the original video_data stream feed for our algorithm (to cut & transformation)
 void DNA_encoder::encoding_no_strand(){
+    
     // create payload file to store encoded strands
     fstream payload_file;
     string payload_path = g_payload_path+"payload";
-    int num_of_GB = 1;
-    unsigned long total_len = 0;
-    payload_path += to_string(num_of_GB);
-    payload_path += ".txt";
-    payload_file.open(payload_path,ios::out);
+    int num_of_files = 0;
+    // payload_path += to_string(num_of_files);
+    // payload_path += ".txt";
+    //payload_file.open(payload_path,ios::out);
 
     
-    payload_file<<">payload0"<<endl;
+    //payload_file<<">payload0"<<endl;
     //create chunking buffer and related structure
     uint8_t buf[1024*1024];
     //go over all files to chunking and encoding
     FILE *fp;
     string nt_sequence;
     for(auto n:all_files_){
+        num_of_files += 1;
+        payload_path = g_payload_path+"payload"+to_string(num_of_files)+".txt";
+        payload_file.open(payload_path,ios::out);
+        payload_file<<">payload0"<<endl;
+
         fp = fopen(n.c_str(), "r");
         if (fp==NULL) {fputs ("File open error",stderr); exit (1);}
         while ( !feof(fp) ) {
@@ -279,8 +284,9 @@ void DNA_encoder::encoding_no_strand(){
             
         }
         fclose(fp);
+        payload_file.close();
     }
-    payload_file.close();
+    
 }
 
 uint16_t DNA_encoder::CCITT16(char *ptr, int length)

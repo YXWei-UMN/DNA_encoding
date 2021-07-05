@@ -15,8 +15,8 @@ FEC_encoding true
 # strand length 180/190/200/210/220 nt
 strand_length 200
 
-if_pre_stranding true
-#set to true if need to output a file strand
+if_pre_stranding false
+#set to false if need to output only one strand for one file
 
 if_mapping false
 if_randomization false
