@@ -11,6 +11,8 @@
 #include <sys/stat.h>
 #include <errno.h>
 #include <bitset>
+#include <sstream>
+#include <cstring>
 
 
 
@@ -29,6 +31,11 @@ public:
     // encode a payload sequence in base 3 with rotate manner
     string base3_rotate_encoding(string digital_data);
     void initial_rotating_encoding_table();
+
+    string FEC_encoding(string digital_data);
+    void initial_FEC_table();
+    uint16_t CCITT16(char *ptr, int length);
+
     void randomize_XOR(string& digital_data);
     void listFiles(string baseDir, bool recursive);
 
@@ -40,6 +47,8 @@ public:
     unsigned int total_chunks_ = 0;
     size_t bytes=0;
     vector<unordered_map<string,string>> rotating_encoding_table_;
+    string FEC_table1;
+    vector<vector<string>> FEC_table2;
     string last_bit = "C"; // used for the fist rotating encoding
 };
 

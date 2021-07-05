@@ -12,7 +12,9 @@ bool g_if_dedupe;
 bool g_if_chunk;
 bool g_if_mapping;
 bool g_if_randomization;
+bool g_if_pre_stranding;
 bool g_base3_rotate_encoding;
+bool g_FEC_encoding;
 long g_payload_size;
 long g_chunk_size;
 long g_strand_length;
@@ -53,6 +55,9 @@ int Parse(string cfgfile){
             case hash_("payload_path"):
                 g_payload_path = value;
                 break;
+            case hash_("if_pre_stranding"):
+                g_if_pre_stranding = (value=="true");
+                break;
             case hash_("if_randomization"):
                 g_if_randomization = (value=="true");
                 break;
@@ -61,6 +66,9 @@ int Parse(string cfgfile){
                 break;
             case hash_("base3_rotate_encoding"):
                 g_base3_rotate_encoding = (value=="true");
+                break;
+            case hash_("FEC_encoding"):
+                g_FEC_encoding = (value=="true");
                 break;
             default:
                 cout<<"unknown cfg: "<<key<<endl;
