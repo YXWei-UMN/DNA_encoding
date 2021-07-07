@@ -40,6 +40,7 @@ extern string g_payload_path;
 extern bool g_if_chunk;
 extern bool g_if_dedupe;
 extern bool g_if_pre_stranding;
+extern bool g_if_ECC;
 extern bool g_if_mapping;
 extern bool g_if_randomization;
 extern bool g_base3_rotate_encoding;

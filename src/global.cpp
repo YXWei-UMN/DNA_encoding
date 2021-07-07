@@ -13,6 +13,7 @@ bool g_if_chunk;
 bool g_if_mapping;
 bool g_if_randomization;
 bool g_if_pre_stranding;
+bool g_if_ECC;
 bool g_base3_rotate_encoding;
 bool g_FEC_encoding;
 long g_payload_size;
@@ -57,6 +58,9 @@ int Parse(string cfgfile){
                 break;
             case hash_("if_pre_stranding"):
                 g_if_pre_stranding = (value=="true");
+                break;
+            case hash_("if_ECC"):
+                g_if_ECC = (value=="true");
                 break;
             case hash_("if_randomization"):
                 g_if_randomization = (value=="true");

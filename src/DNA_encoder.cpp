@@ -145,19 +145,26 @@ void DNA_encoder::encoding_stranding(){
                 // 2 nts have to be reserved for ECC (CCITT16: 16 bits)
                 // each oligo store information with size of 320-16 = 304 bits -> 38 char
                 while (digital_data.size()>0){
-                    string digital_strand  = digital_data.substr(0,38);
+                    string digital_strand;
+                    
+                    if (g_if_ECC){
+                        digital_strand = digital_data.substr(0,38);
 
-                    // add ECC code
-                    char strand_char[digital_strand.length()+1];
-                    strcpy(strand_char, digital_strand.c_str());
-                    uint16_t ECC = CCITT16(strand_char,strlen(strand_char));
+                        // add ECC code
+                        char strand_char[digital_strand.length()+1];
+                        strcpy(strand_char, digital_strand.c_str());
+                        uint16_t ECC = CCITT16(strand_char,strlen(strand_char));
 
-                    // convert 16-bit int to char array
-                    char ECC_char[2];
-                    ECC_char[0] = (ECC>>8);
-                    ECC_char[1] = (ECC&0xff);
-                    digital_strand += ECC_char[0];
-                    digital_strand += ECC_char[1];
+                        // convert 16-bit int to char array
+                        char ECC_char[2];
+                        ECC_char[0] = (ECC>>8);
+                        ECC_char[1] = (ECC&0xff);
+                        digital_strand += ECC_char[0];
+                        digital_strand += ECC_char[1];
+                    }
+                    else {
+                        digital_strand = digital_data.substr(0,40);
+                    }
                     
                     string strand = FEC_encoding(digital_strand);
                     payload_file<<">payload"<<strand_num++<<endl;
