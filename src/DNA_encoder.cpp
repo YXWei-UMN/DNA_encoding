@@ -332,9 +332,9 @@ void DNA_encoder::encoding_no_strand(){
 
             string digital_data ((char*)ptr,len);
 
-            if(g_base3_rotate_encoding)
+            if(g_encoding_scheme==1)
                 nt_sequence=base3_rotate_encoding(digital_data);
-            else if (g_FEC_encoding)
+            else if (g_encoding_scheme==2)
                 nt_sequence=FEC_encoding(digital_data);
             else
                 cout<<"no encoding scheme"<<endl;
