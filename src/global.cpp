@@ -14,8 +14,7 @@ bool g_if_mapping;
 bool g_if_randomization;
 bool g_if_pre_stranding;
 bool g_if_ECC;
-bool g_base3_rotate_encoding;
-bool g_FEC_encoding;
+int g_encoding_scheme;
 long g_payload_size;
 long g_chunk_size;
 long g_strand_length;
@@ -41,9 +40,6 @@ int Parse(string cfgfile){
             case hash_("swap_granularity"):
                 g_swap_granularity = stoi(value);
                 break;
-            case hash_("chunk_size"):
-                g_chunk_size = stol(value);
-                break;
             case hash_("strand_length"):
                 g_strand_length = stol(value);
                 break;
@@ -68,11 +64,8 @@ int Parse(string cfgfile){
             case hash_("if_mapping"):
                 g_if_dedupe = (value=="true");
                 break;
-            case hash_("base3_rotate_encoding"):
-                g_base3_rotate_encoding = (value=="true");
-                break;
-            case hash_("FEC_encoding"):
-                g_FEC_encoding = (value=="true");
+            case hash_("encoding_scheme"):
+                g_encoding_scheme = stoi(value);
                 break;
             default:
                 cout<<"unknown cfg: "<<key<<endl;

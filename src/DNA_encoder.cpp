@@ -57,7 +57,36 @@ string DNA_encoder::FEC_encoding(string digital_data) {
 }
 
 
-//TODO their ECC code
+//direct mapping 00-A 01-T 10-C 11-G
+string DNA_encoder::direct_encoding(string digital_data) {
+    string result;
+    for (std::size_t i = 0; i < digital_data.size(); i++)
+    {
+        //cover from binary to decimal
+        bitset<8> bits(digital_data.c_str()[i]);
+        for (int j = 0; j < 8; j+=2) {
+            if (bits[j]==0){
+                if (bits[j+1]==0){
+                    result+="A";
+                } else if (bits[j+1]==1){
+                    result+="T";
+                } else {
+                    cerr<<"bit not 1 or 0"<<endl;
+                }
+            }
+            else if (bits[j]==1){
+                if (bits[j+1]==0){
+                    result+="C";
+                } else if (bits[j+1]==1){
+                    result+="G";
+                } else {
+                    cerr<<"bit not 1 or 0"<<endl;
+                }
+            }
+        }
+    }
+    return result;
+}
 
 
 //rotate encoding without huffman tree compression
@@ -137,10 +166,33 @@ void DNA_encoder::encoding_stranding(){
             }
 
             // rotate code
-            if(g_base3_rotate_encoding)
-                nt_sequence+=base3_rotate_encoding(digital_data);
-            //else if(g_fountain_code){}
-            else if(g_FEC_encoding){
+            if(g_encoding_scheme==1){
+                string strand=base3_rotate_encoding(digital_data);
+                payload_file<<">payload"<<strand_num++<<endl;
+                // execute transformation: mapping/swap/...
+                if (g_if_mapping){
+                    string permutated_strand = mapping(strand);
+                    payload_file<<permutated_strand<<endl;
+                } else if(g_swap_granularity>0){
+                    string permutated_strand = swap(strand);;
+                    payload_file<<permutated_strand<<endl;
+                } else
+                    payload_file<<strand<<endl;
+            }
+            else if(g_encoding_scheme==0){
+                string strand=direct_encoding(digital_data);
+                payload_file<<">payload"<<strand_num++<<endl;
+                // execute transformation: mapping/swap/...
+                if (g_if_mapping){
+                    string permutated_strand = mapping(strand);
+                    payload_file<<permutated_strand<<endl;
+                } else if(g_swap_granularity>0){
+                    string permutated_strand = swap(strand);;
+                    payload_file<<permutated_strand<<endl;
+                } else
+                    payload_file<<strand<<endl;
+            }
+            else if(g_encoding_scheme==2){
                 // 200 nts correspoinding to 320 bits
                 // 2 nts have to be reserved for ECC (CCITT16: 16 bits)
                 // each oligo store information with size of 320-16 = 304 bits -> 38 char
@@ -181,7 +233,6 @@ void DNA_encoder::encoding_stranding(){
                     digital_data.erase(0, 38);
                 }
                 //nt_sequence=FEC_encoding(digital_data);
-                
             }
             //else if(g_xxx_code){}
             else

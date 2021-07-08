@@ -43,8 +43,8 @@ extern bool g_if_pre_stranding;
 extern bool g_if_ECC;
 extern bool g_if_mapping;
 extern bool g_if_randomization;
-extern bool g_base3_rotate_encoding;
-extern bool g_FEC_encoding;
+extern int g_encoding_scheme;
+
 extern long g_payload_size;
 extern long g_chunk_size;
 extern long g_strand_length;

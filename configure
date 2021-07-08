@@ -9,8 +9,11 @@ data_path /home/umhadmin/wenlong/DNA_encoding/encoding_files/
 payload_path /home/umhadmin/wenlong/DNA_encoding/payload_files/
 
 #payload_path ./profiler
-base3_rotate_encoding false
-FEC_encoding true
+
+# encoding scheme: 0=direct 1=rotate 2=FEC 3=xxx
+encoding_scheme 0
+
+
 
 # strand length 180/190/200/210/220 nt
 strand_length 200
@@ -27,5 +30,3 @@ if_randomization false
 # 1 3 5 7, 0 means no swap
 swap_granularity 0
 
-# payload size 400MB 800MB 1600MB 3200MB
-payload_size 100000
