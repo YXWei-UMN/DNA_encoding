@@ -11,14 +11,14 @@ payload_path /home/umhadmin/wenlong/DNA_encoding/payload_files/
 #payload_path ./profiler
 
 # encoding scheme: 0=direct 1=rotate 2=FEC 3=xxx
-encoding_scheme 0
+encoding_scheme 2
 
 
 
 # strand length 180/190/200/210/220 nt
 strand_length 200
 
-if_pre_stranding true
+if_pre_stranding false
 #set to false if need to output only one strand for one file
 
 if_ECC true

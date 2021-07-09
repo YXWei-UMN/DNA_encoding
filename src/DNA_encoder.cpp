@@ -146,7 +146,7 @@ void DNA_encoder::encoding_stranding(){
 
             // assign each GB data in different files
             // 4mins for a 280MB file
-            if (total_len>=1024*1024*1024){
+            if (total_len>=(long)5*1024*1024*1024){
                 total_len = 0;
                 payload_file.close();
                 num_of_GB += 1;
@@ -155,7 +155,7 @@ void DNA_encoder::encoding_stranding(){
             }
             //cout<<total_len<<endl;
             size_t len = fread(buf, 1, sizeof(buf), fp);
-            total_len += len;
+            // total_len += len;
             uint8_t *ptr = &buf[0];
 
             string digital_data ((char*)ptr,len);
@@ -173,11 +173,16 @@ void DNA_encoder::encoding_stranding(){
                 if (g_if_mapping){
                     string permutated_strand = mapping(strand);
                     payload_file<<permutated_strand<<endl;
+                    total_len += permutated_strand.length();
                 } else if(g_swap_granularity>0){
                     string permutated_strand = swap(strand);;
                     payload_file<<permutated_strand<<endl;
-                } else
+                    total_len += permutated_strand.length();
+                } else{
                     payload_file<<strand<<endl;
+                    total_len += strand.length();
+                }
+                    
             }
             else if(g_encoding_scheme==0){
                 string strand=direct_encoding(digital_data);
@@ -186,11 +191,16 @@ void DNA_encoder::encoding_stranding(){
                 if (g_if_mapping){
                     string permutated_strand = mapping(strand);
                     payload_file<<permutated_strand<<endl;
+                    total_len += permutated_strand.length();
                 } else if(g_swap_granularity>0){
                     string permutated_strand = swap(strand);;
                     payload_file<<permutated_strand<<endl;
-                } else
+                    total_len += permutated_strand.length();
+                } else {
                     payload_file<<strand<<endl;
+                    total_len += strand.length();
+                }
+                    
             }
             else if(g_encoding_scheme==2){
                 // 200 nts correspoinding to 320 bits
@@ -224,13 +234,23 @@ void DNA_encoder::encoding_stranding(){
                     if (g_if_mapping){
                         string permutated_strand = mapping(strand);
                         payload_file<<permutated_strand<<endl;
+                        total_len += permutated_strand.length();
                     } else if(g_swap_granularity>0){
                         string permutated_strand = swap(strand);;
                         payload_file<<permutated_strand<<endl;
-                    } else
+                        total_len += permutated_strand.length();
+                    } else{
                         payload_file<<strand<<endl;
+                        total_len += strand.length();
+                    }
+                        
+                    if (g_if_ECC){
+                        digital_data.erase(0, 38);
+                    }
+                    else {
+                        digital_data.erase(0, 40);
+                    }
 
-                    digital_data.erase(0, 38);
                 }
                 //nt_sequence=FEC_encoding(digital_data);
             }
@@ -238,33 +258,6 @@ void DNA_encoder::encoding_stranding(){
             else
                 cout<<"no encoding scheme"<<endl;
 
-            /*write encoded strand to payload file
-              >payload x
-              ATCGATCG...*/
-            
-            // saved for future use
-            // while (nt_sequence.size()>0){
-            //     string strand = nt_sequence.substr(0, 200);
-
-            //     // add ECC code
-            //     // char strand_char[256];
-            //     // strcpy(strand_char, strand.c_str());
-
-            //     //string permutated_strand = swap(strand);
-            //     payload_file<<">payload"<<strand_num++<<endl;
-
-            //     // execute transformation: mapping/swap/...
-            //     if (g_if_mapping){
-            //         string permutated_strand = mapping(strand);
-            //         payload_file<<permutated_strand<<endl;
-            //     } else if(g_swap_granularity>0){
-            //         string permutated_strand = swap(strand);;
-            //         payload_file<<permutated_strand<<endl;
-            //     } else
-            //         payload_file<<strand<<endl;
-
-            //     nt_sequence.erase(0, 200);
-            // }
         }
         fclose(fp);
     }
@@ -302,32 +295,38 @@ void DNA_encoder::encoding_file(){
 // no strand
 // it's the original video_data stream feed for our algorithm (to cut & transformation)
 void DNA_encoder::encoding_no_strand(){
-    
+
     // create payload file to store encoded strands
     fstream payload_file;
     string payload_path = g_payload_path+"payload";
-    int num_of_files = 0;
-    // payload_path += to_string(num_of_files);
-    // payload_path += ".txt";
-    //payload_file.open(payload_path,ios::out);
+    int num_of_payload_file = 1;
+    unsigned long total_len = 0;
+    payload_path += to_string(num_of_payload_file);
+    payload_path += ".txt";
+    payload_file.open(payload_path,ios::out);
 
-    
-    //payload_file<<">payload0"<<endl;
     //create chunking buffer and related structure
     uint8_t buf[1024*1024];
     //go over all files to chunking and encoding
     FILE *fp;
     string nt_sequence;
     for(auto n:all_files_){
-        num_of_files += 1;
-        payload_path = g_payload_path+"payload"+to_string(num_of_files)+".txt";
-        payload_file.open(payload_path,ios::out);
-        payload_file<<">payload0"<<endl;
+        if (total_len>=(long)5*1024*1024*1024){
+                total_len = 0;
+                payload_file.close();
+                num_of_payload_file += 1;
+                payload_path = g_payload_path+"payload"+to_string(num_of_payload_file)+".txt";
+                payload_file.open(payload_path,ios::out);
+        }
 
         fp = fopen(n.c_str(), "r");
         if (fp==NULL) {fputs ("File open error",stderr); exit (1);}
+
+        payload_file<<">payload0"<<endl;
+
         while ( !feof(fp) ) {
             size_t len = fread(buf, 1, sizeof(buf), fp);
+            // total_len += len;
             uint8_t *ptr = &buf[0];
 
             string digital_data ((char*)ptr,len);
@@ -339,12 +338,11 @@ void DNA_encoder::encoding_no_strand(){
             else
                 cout<<"no encoding scheme"<<endl;
             payload_file<<nt_sequence;
-            
+            total_len += nt_sequence.length();
         }
         fclose(fp);
-        payload_file.close();
     }
-    
+    payload_file.close();
 }
 
 uint16_t DNA_encoder::CCITT16(char *ptr, int length)
