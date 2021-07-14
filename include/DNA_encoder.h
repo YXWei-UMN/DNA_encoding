@@ -36,8 +36,9 @@ public:
     void initial_FEC_table();
 
     // RS encoding. Reference: Robust Chemical Preservation of Digital Information on DNA in Silica with Error-Correcting Codes
-    // If the number of byte is not a even number, we pad it with 0x00.
     string ReedSolomon_encoding(string digital_data);
+    void init_RS_table();
+    string RS_table[48];
 
     uint16_t CCITT16(char *ptr, int length);
 

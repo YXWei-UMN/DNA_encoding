@@ -5,7 +5,10 @@
 #include "DNA_encoder.h"
 #include "tool.h"
 #include "transformation.h"
+#include "rs.hpp"
 #include <cstdlib>
+#include <cstring>
+#include <cassert>
 
 //TODO other three code
 
@@ -57,28 +60,73 @@ string DNA_encoder::FEC_encoding(string digital_data) {
 }
 
 //RS_encoding
-string ReedSolomon_encoding(string digital_data) {
-    if (digital_data.size() % 2 != 0){
+string DNA_encoder::ReedSolomon_encoding(string digital_data) {
+    // step 0: padding to a multiple of 3
+    cout << "digital_data.size() = " << digital_data.size() << endl;
+    while (digital_data.size() % 30 != 0){
         digital_data = digital_data + '\0';
-    } else {
-        // step 1: convert form 256^2 to 47^3
-        string result(digital_data.size()/2*3, '\0');
-        for(int i = 0, j = 0; i < digital_data.size(); i += 2, j += 3) {
-            char bit0 = digital_data[i];
-            char bit1 = digital_data[i+1];
-            int num = bit0 * 256 + bit1;
+    }
+    cout << "digital_data.size() = " << digital_data.size() << endl;
 
-            result[j+2] = num % 47;
-            num /= 47;
-            result[j+1] = num % 47;
-            num /= 47;
-            result[j] = num % 47;
-            num /= 47;
-            assert(num == 0);
+    // step 1: apply RS encoding on each 30-bytes block
+    const int MSG_LENGTH = 30;
+    const int ECC_LENGTH = 6;
+    const int ENCODED_LENGTH = MSG_LENGTH + ECC_LENGTH;
+    RS::ReedSolomon<MSG_LENGTH, ECC_LENGTH> rs;
+
+    int n_rs_unit = digital_data.size() / MSG_LENGTH;
+    cout << "n_rs_unit = " << n_rs_unit << endl;
+    cout << "encoded_unit_length = " << ENCODED_LENGTH * n_rs_unit << endl;
+    char rs_result[ENCODED_LENGTH * n_rs_unit];
+    for (int i = 0, j = 0; i < digital_data.size(); i += MSG_LENGTH, j += ENCODED_LENGTH) {
+        char message[MSG_LENGTH+1];
+        message[MSG_LENGTH] = '\0';
+        memcpy(message, digital_data.c_str()+i, MSG_LENGTH);
+        // cout << "message = " << message << endl;
+        char cur_encoded[ENCODED_LENGTH+1];
+        cur_encoded[ENCODED_LENGTH] = '\0';
+        rs.Encode(message, cur_encoded);
+        // cout << "encoded message = " << cur_encoded << endl;
+        // cout << "encoded length = " << strlen(cur_encoded) << endl;
+        memcpy(rs_result + j, cur_encoded, ENCODED_LENGTH);
+    }
+    cout << "rs_result" << rs_result << endl;
+
+    // step 2: apply mapping from encoded bytes to nt
+    int total_rs_len = ENCODED_LENGTH * n_rs_unit;
+    int result_len = total_rs_len / 2 * 3 * 3; // 2 -> two 256-base number to use; 3 -> three 47-base number generated; 3 -> three nt for each 47-base number
+    cout << "result_len = " << result_len << endl;
+    char result_cstring[result_len+1];
+    result_cstring[result_len] = '\0';
+
+    int j = 0;
+    for (int i = 0; i < total_rs_len; i += 2) {
+        // convert from 256^2 to 47^3
+        unsigned int middle_num = (((unsigned int)rs_result[i])&0xff) * 256 + (((unsigned int)rs_result[i+1])&0xff);
+        // cout << "l r m = " << hex << (unsigned int)(char)(rs_result[i]) << '\t' << (unsigned int)(rs_result[i+1]) << '\t' << middle_num << endl << flush;
+        unsigned int base47_num[3];
+        base47_num[2] = middle_num % 47;
+        middle_num /= 47;
+        base47_num[1] = middle_num % 47;
+        middle_num /= 47;
+        base47_num[0] = middle_num % 47;
+        middle_num /= 47;
+        assert(middle_num == 0);
+
+        // mapping to nt
+        for (int k1 = 0; k1 < 3; k1++) {
+            for (int k2 = 0; k2 < 3; k2++) {
+                // cout << j << ' ' << base47_num[k1] << ' ' << endl;;
+                result_cstring[j++] = RS_table[base47_num[k1]][k2];
+                cout << j-1 << ' ' << RS_table[base47_num[k1]][k2] << endl;
+            }
         }
 
-        
     }
+    assert(j == result_len);
+
+    string result(result_cstring);
+    return result;
 }
 
 
@@ -392,6 +440,26 @@ void DNA_encoder::listFiles(string baseDir, bool recursive)
     }
 }
 
+void DNA_encoder::init_RS_table() {
+    RS_table[0] = "ACA"; RS_table[1] = "CCA"; RS_table[2] = "GCA";
+    RS_table[3] = "TCA"; RS_table[4] = "AGA"; RS_table[5] = "CGA";
+    RS_table[6] = "GGA"; RS_table[7] = "TGA"; RS_table[8] = "ATA";
+    RS_table[9] = "CTA"; RS_table[10] = "GTA"; RS_table[11] = "TTA";
+    RS_table[12] = "AAC"; RS_table[13] = "CAC"; RS_table[14] = "GAC";
+    RS_table[15] = "TAC"; RS_table[16] = "AGC"; RS_table[17] = "CGC";
+    RS_table[18] = "GGC"; RS_table[19] = "TGC"; RS_table[20] = "ATC";
+    RS_table[21] = "CTC"; RS_table[22] = "GTC"; RS_table[23] = "TTC";
+    RS_table[24] = "AAG"; RS_table[25] = "CAG"; RS_table[26] = "GAG";
+    RS_table[27] = "TAG"; RS_table[28] = "ACG"; RS_table[29] = "CCG";
+    RS_table[30] = "GCG"; RS_table[31] = "TCG"; RS_table[32] = "ATG";
+    RS_table[33] = "CTG"; RS_table[34] = "GCG"; RS_table[35] = "TTG";
+    RS_table[36] = "AAT"; RS_table[37] = "CAT"; RS_table[38] = "GAT";
+    RS_table[39] = "TAT"; RS_table[40] = "ACT"; RS_table[41] = "CCT";
+    RS_table[42] = "GCT"; RS_table[43] = "TCT"; RS_table[44] = "AGT";
+    RS_table[45] = "CGT"; RS_table[46] = "GGT";
+
+}
+
 DNA_encoder::DNA_encoder() {
     // generate 267-length pseudo random. 200 ternary code is 266.6 binary code (6:8)
     srand(std::time(nullptr)); // use current time as seed for random generator
@@ -408,8 +476,11 @@ DNA_encoder::DNA_encoder() {
 
     initial_FEC_table();
 
+    //initilize RS table
+    init_RS_table();
+
     //encode with strand;
-    encoding_stranding();
+    //encoding_stranding();
     //encode without strand
     //encoding_no_strand();
     //encoding_file();
