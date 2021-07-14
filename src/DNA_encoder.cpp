@@ -130,7 +130,36 @@ string DNA_encoder::ReedSolomon_encoding(string digital_data) {
 }
 
 
-//TODO their ECC code
+//direct mapping 00-A 01-T 10-C 11-G
+string DNA_encoder::direct_encoding(string digital_data) {
+    string result;
+    for (std::size_t i = 0; i < digital_data.size(); i++)
+    {
+        //cover from binary to decimal
+        bitset<8> bits(digital_data.c_str()[i]);
+        for (int j = 0; j < 8; j+=2) {
+            if (bits[j]==0){
+                if (bits[j+1]==0){
+                    result+="A";
+                } else if (bits[j+1]==1){
+                    result+="T";
+                } else {
+                    cerr<<"bit not 1 or 0"<<endl;
+                }
+            }
+            else if (bits[j]==1){
+                if (bits[j+1]==0){
+                    result+="C";
+                } else if (bits[j+1]==1){
+                    result+="G";
+                } else {
+                    cerr<<"bit not 1 or 0"<<endl;
+                }
+            }
+        }
+    }
+    return result;
+}
 
 
 //rotate encoding without huffman tree compression
@@ -190,7 +219,7 @@ void DNA_encoder::encoding_stranding(){
 
             // assign each GB data in different files
             // 4mins for a 280MB file
-            if (total_len>=1024*1024*1024){
+            if (total_len>=(long)5*1024*1024*1024){
                 total_len = 0;
                 payload_file.close();
                 num_of_GB += 1;
@@ -199,7 +228,7 @@ void DNA_encoder::encoding_stranding(){
             }
             //cout<<total_len<<endl;
             size_t len = fread(buf, 1, sizeof(buf), fp);
-            total_len += len;
+            // total_len += len;
             uint8_t *ptr = &buf[0];
 
             string digital_data ((char*)ptr,len);
@@ -210,27 +239,67 @@ void DNA_encoder::encoding_stranding(){
             }
 
             // rotate code
-            if(g_base3_rotate_encoding)
-                nt_sequence+=base3_rotate_encoding(digital_data);
-            //else if(g_fountain_code){}
-            else if(g_FEC_encoding){
+            if(g_encoding_scheme==1){
+                string strand=base3_rotate_encoding(digital_data);
+                payload_file<<">payload"<<strand_num++<<endl;
+                // execute transformation: mapping/swap/...
+                if (g_if_mapping){
+                    string permutated_strand = mapping(strand);
+                    payload_file<<permutated_strand<<endl;
+                    total_len += permutated_strand.length();
+                } else if(g_swap_granularity>0){
+                    string permutated_strand = swap(strand);;
+                    payload_file<<permutated_strand<<endl;
+                    total_len += permutated_strand.length();
+                } else{
+                    payload_file<<strand<<endl;
+                    total_len += strand.length();
+                }
+                    
+            }
+            else if(g_encoding_scheme==0){
+                string strand=direct_encoding(digital_data);
+                payload_file<<">payload"<<strand_num++<<endl;
+                // execute transformation: mapping/swap/...
+                if (g_if_mapping){
+                    string permutated_strand = mapping(strand);
+                    payload_file<<permutated_strand<<endl;
+                    total_len += permutated_strand.length();
+                } else if(g_swap_granularity>0){
+                    string permutated_strand = swap(strand);;
+                    payload_file<<permutated_strand<<endl;
+                    total_len += permutated_strand.length();
+                } else {
+                    payload_file<<strand<<endl;
+                    total_len += strand.length();
+                }
+                    
+            }
+            else if(g_encoding_scheme==2){
                 // 200 nts correspoinding to 320 bits
                 // 2 nts have to be reserved for ECC (CCITT16: 16 bits)
                 // each oligo store information with size of 320-16 = 304 bits -> 38 char
                 while (digital_data.size()>0){
-                    string digital_strand  = digital_data.substr(0,38);
+                    string digital_strand;
+                    
+                    if (g_if_ECC){
+                        digital_strand = digital_data.substr(0,38);
 
-                    // add ECC code
-                    char strand_char[digital_strand.length()+1];
-                    strcpy(strand_char, digital_strand.c_str());
-                    uint16_t ECC = CCITT16(strand_char,strlen(strand_char));
+                        // add ECC code
+                        char strand_char[digital_strand.length()+1];
+                        strcpy(strand_char, digital_strand.c_str());
+                        uint16_t ECC = CCITT16(strand_char,strlen(strand_char));
 
-                    // convert 16-bit int to char array
-                    char ECC_char[2];
-                    ECC_char[0] = (ECC>>8);
-                    ECC_char[1] = (ECC&0xff);
-                    digital_strand += ECC_char[0];
-                    digital_strand += ECC_char[1];
+                        // convert 16-bit int to char array
+                        char ECC_char[2];
+                        ECC_char[0] = (ECC>>8);
+                        ECC_char[1] = (ECC&0xff);
+                        digital_strand += ECC_char[0];
+                        digital_strand += ECC_char[1];
+                    }
+                    else {
+                        digital_strand = digital_data.substr(0,40);
+                    }
                     
                     string strand = FEC_encoding(digital_strand);
                     payload_file<<">payload"<<strand_num++<<endl;
@@ -238,48 +307,30 @@ void DNA_encoder::encoding_stranding(){
                     if (g_if_mapping){
                         string permutated_strand = mapping(strand);
                         payload_file<<permutated_strand<<endl;
+                        total_len += permutated_strand.length();
                     } else if(g_swap_granularity>0){
                         string permutated_strand = swap(strand);;
                         payload_file<<permutated_strand<<endl;
-                    } else
+                        total_len += permutated_strand.length();
+                    } else{
                         payload_file<<strand<<endl;
+                        total_len += strand.length();
+                    }
+                        
+                    if (g_if_ECC){
+                        digital_data.erase(0, 38);
+                    }
+                    else {
+                        digital_data.erase(0, 40);
+                    }
 
-                    digital_data.erase(0, 38);
                 }
                 //nt_sequence=FEC_encoding(digital_data);
-                
             }
             //else if(g_xxx_code){}
             else
                 cout<<"no encoding scheme"<<endl;
 
-            /*write encoded strand to payload file
-              >payload x
-              ATCGATCG...*/
-            
-            // saved for future use
-            // while (nt_sequence.size()>0){
-            //     string strand = nt_sequence.substr(0, 200);
-
-            //     // add ECC code
-            //     // char strand_char[256];
-            //     // strcpy(strand_char, strand.c_str());
-
-            //     //string permutated_strand = swap(strand);
-            //     payload_file<<">payload"<<strand_num++<<endl;
-
-            //     // execute transformation: mapping/swap/...
-            //     if (g_if_mapping){
-            //         string permutated_strand = mapping(strand);
-            //         payload_file<<permutated_strand<<endl;
-            //     } else if(g_swap_granularity>0){
-            //         string permutated_strand = swap(strand);;
-            //         payload_file<<permutated_strand<<endl;
-            //     } else
-            //         payload_file<<strand<<endl;
-
-            //     nt_sequence.erase(0, 200);
-            // }
         }
         fclose(fp);
     }
@@ -317,33 +368,50 @@ void DNA_encoder::encoding_file(){
 // no strand
 // it's the original video_data stream feed for our algorithm (to cut & transformation)
 void DNA_encoder::encoding_no_strand(){
-    
+
     // create payload file to store encoded strands
     fstream payload_file;
-    payload_file.open(g_payload_path,ios::out);
-    payload_file<<">payload0"<<endl;
+    string payload_path = g_payload_path+"payload";
+    int num_of_payload_file = 1;
+    unsigned long total_len = 0;
+    payload_path += to_string(num_of_payload_file);
+    payload_path += ".txt";
+    payload_file.open(payload_path,ios::out);
+
     //create chunking buffer and related structure
     uint8_t buf[1024*1024];
     //go over all files to chunking and encoding
     FILE *fp;
     string nt_sequence;
     for(auto n:all_files_){
+        if (total_len>=(long)5*1024*1024*1024){
+                total_len = 0;
+                payload_file.close();
+                num_of_payload_file += 1;
+                payload_path = g_payload_path+"payload"+to_string(num_of_payload_file)+".txt";
+                payload_file.open(payload_path,ios::out);
+        }
+
         fp = fopen(n.c_str(), "r");
         if (fp==NULL) {fputs ("File open error",stderr); exit (1);}
+
+        payload_file<<">payload0"<<endl;
+
         while ( !feof(fp) ) {
             size_t len = fread(buf, 1, sizeof(buf), fp);
+            // total_len += len;
             uint8_t *ptr = &buf[0];
 
             string digital_data ((char*)ptr,len);
 
-            if(g_base3_rotate_encoding)
+            if(g_encoding_scheme==1)
                 nt_sequence=base3_rotate_encoding(digital_data);
-            else if (g_FEC_encoding)
+            else if (g_encoding_scheme==2)
                 nt_sequence=FEC_encoding(digital_data);
             else
                 cout<<"no encoding scheme"<<endl;
             payload_file<<nt_sequence;
-            cout<<nt_sequence<<endl;
+            total_len += nt_sequence.length();
         }
         fclose(fp);
     }
@@ -479,6 +547,13 @@ DNA_encoder::DNA_encoder() {
     //initilize RS table
     init_RS_table();
 
+
+    if (g_if_pre_stranding){// output 200 nts strands
+        encoding_stranding();
+    }
+    else{
+        encoding_no_strand();
+    }
     //encode with strand;
     //encoding_stranding();
     //encode without strand

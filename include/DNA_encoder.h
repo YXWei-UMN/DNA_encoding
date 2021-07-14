@@ -42,16 +42,15 @@ public:
 
     uint16_t CCITT16(char *ptr, int length);
 
+    string direct_encoding(string digital_data);
+
     void randomize_XOR(string& digital_data);
     void listFiles(string baseDir, bool recursive);
 
     string pseudo_random_sequence_;
     vector<string> all_files_;
 
-    unordered_set<uint64_t> chunk_index_;
-    unsigned int distinct_chunks_ = 0;
-    unsigned int total_chunks_ = 0;
-    size_t bytes=0;
+
     vector<unordered_map<string,string>> rotating_encoding_table_;
     string FEC_table1;
     vector<vector<string>> FEC_table2;
