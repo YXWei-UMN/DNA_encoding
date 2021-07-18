@@ -182,7 +182,12 @@ int main(int argc, char** argv) {
 
 
     unsigned int cur_pos = 0;
-    int legal = 0;
+
+    // illegal == 0 means the current collision is safe to be cut
+    int illegal = 0;
+
+    unsigned int collision_count_in_hybrid_area = 0;
+    unsigned int collision_count_in_sparse_area = 0;
 
     for(auto i=0;i<collision_list.size();++i){
         auto start = collision_list[i].first.first;
@@ -190,19 +195,33 @@ int main(int argc, char** argv) {
         auto primer = collision_list[i].second;
 
         auto cut = find_cut_pos(start,end);
-
+        int prev_illegal = illegal;
+        illegal = 0;
         if (cut==0){
             cut = find_trivial_cut_pos(start,end);
-            legal = 2;
+            illegal = 1;
+            // means the next cut area should be hybrid
         }
 
         if (!check_blind_spot(cut-cur_pos)){
-            if (legal==2){legal--;}
-            else if (legal==1){
+            if (prev_illegal==1){
                 hybrid_area_append(cur_pos,cut);
-                legal = 0;
+                collision_count_in_hybrid_area++;
             }
-            cur_pos=cut;
+            else{
+                collision_count_in_sparse_area++;
+            }
+            cur_pos = cut;
+
+            // if (illegal==2){illegal--;collision_count_in_hybrid_area++;}
+            // else if (illegal==1){
+            //     hybrid_area_append(cur_pos,cut);
+            //     illegal = 0;
+            //     collision_count_in_hybrid_area++;
+            // }
+            // else{collision_count_in_sparse_area++;}
+            // cur_pos=cut;
+            
         }
         else{ // distance is illegal
                 // then check every point between cut and next_cut
@@ -211,6 +230,8 @@ int main(int argc, char** argv) {
                 // if not, check the next collision,
                 // until we can find one
 
+
+            collision_count_in_hybrid_area++;
             auto left = cur_pos;
             bool flag = false;
             while(!flag){
@@ -225,10 +246,10 @@ int main(int argc, char** argv) {
                     auto next_end = collision_list[i+1].first.second;
                     cut = find_cut_pos(next_start,next_end);
                     
-                    legal = 0;
+                    illegal = 0;
                     if (cut==0){
                         cut = find_trivial_cut_pos(next_start,next_end);
-                        legal = 1;
+                        illegal = 1;
                     }
 
                     for (auto it = prev_cut+10;it<=cut;it+=10){
@@ -241,9 +262,10 @@ int main(int argc, char** argv) {
                     }
                 }
                 i++;
+                collision_count_in_hybrid_area++;
             }
         }
-        if (legal!=0 && i<collision_list.size()-1){
+        if (illegal!=0 && i<collision_list.size()-1){
             auto next_start = collision_list[i+1].first.first;
             auto next_end = collision_list[i+1].first.second;
             cut = find_cut_pos(next_start,next_end);  
@@ -257,20 +279,33 @@ int main(int argc, char** argv) {
                 if (cur_pos+strand_length_list[it]<=cut && !check_blind_spot(cut-cur_pos-strand_length_list[it])){
                     hybrid_area_append(cur_pos,cur_pos+strand_length_list[it]);
                     cur_pos = cur_pos+strand_length_list[it];
-                    legal = 0;
+                    illegal = 0;
                     break;
                 }
             }
         }
     }
 
+
+    unsigned int total_len = collision_list[collision_list.size()-1].first.second;
+    unsigned int hybrid_len = 0; 
     cout<<"Existing hybrid area"<<endl;
     //int not_150_count = 0; 
     for (auto it = hybrid_area.begin();it<hybrid_area.end();it++){
         cout<<it->first<<" "<<it->second<<endl;
         //if (it->second-it->first != 150){not_150_count++;}
+        hybrid_len += (it->second - it->first);
     }
-    //cout<<">>>>>>>>>>>"<<endl;
+    cout<<">>>>>>>>>>>"<<endl;
+    cout<<"hybrid length: "<<hybrid_len<<endl;
+    cout<<"total length: "<<total_len<<endl;
+    cout<<"percentage of hybrid area of total len: "<<(double)hybrid_len/total_len<<endl;
+    cout<<">>>>>>>>>>>"<<endl;
+    cout<<"collision_count_in_hybrid_area: "<<collision_count_in_hybrid_area<<endl;
+    cout<<"collision_count_in_sparse_area: "<<collision_count_in_sparse_area<<endl;
+    cout<<"total collision count: "<<collision_list.size()<<endl;
+
+    
     //cout<<not_150_count<<" "<<hybrid_area.size()<<endl;
     //most of them are 150 nt area
 
