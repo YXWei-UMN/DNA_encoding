@@ -126,7 +126,7 @@ int main(int argc, char** argv) {
     myfile.open (argv[1]);   
     string line;
 
-    int count = 0;
+    //int count = 0;
 
     // getting the collision information
     while (getline(myfile,line)){
@@ -153,8 +153,8 @@ int main(int argc, char** argv) {
 
 
         // count the first 10000 lines of blast result;
-        count++;
-        if (count>10000){break;}
+        // count++;
+        // if (count>10000){break;}
     }
     sort(collision_list.begin(),collision_list.end(),collision_sort);
 
