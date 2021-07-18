@@ -1,4 +1,4 @@
 cd build
 cmake ..
 make
-./DNA_encoding ../configure
+./DNA_encoding ../configure.cfg
