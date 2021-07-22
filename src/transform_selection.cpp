@@ -82,15 +82,30 @@ void TransformSelection::Select() {
         }
     }
 
+    set< pair<int, unsigned int> > strand_order; // pair: collision_list.size(), strand_id
+                                                 // we sort strand ascendingly based on the collision_list size
     for (int i = 0; i < n_strand; i++) {
+        int max_size = 0;
+        for (int j = 0; j < 4; j++) {
+            int cur_size = collision_list[j][i].size();
+            if (cur_size > max_size) {
+                max_size = cur_size;
+            } 
+        }
+        strand_order.insert(make_pair(max_size, i));
+    }
+
+    for (auto it = strand_order.begin(); it != strand_order.end(); it++) {
+        int i = it->second; // strand i
+        // cout << "strand " << i << ";  collision_size" << it->first << endl;
         int n_collided_increased_min = 2000000000;
         int selection = -1;
 
         for (int j = 0; j < 4; j++) {
             vector<unsigned int> &current_collision_list = collision_list[j][i];
             int n_collided_increased = current_collision_list.size();
-            for(auto it = current_collision_list.begin(); it != current_collision_list.end(); it++) {
-                int primer = *it;
+            for(auto it2 = current_collision_list.begin(); it2 != current_collision_list.end(); it2++) {
+                int primer = *it2;
                 if (collided_primers.find(primer) != collided_primers.end()) {
                     n_collided_increased--;
                 }
@@ -108,7 +123,7 @@ void TransformSelection::Select() {
         for(auto it = current_collision_list.begin(); it != current_collision_list.end(); it++) {
             int primer = *it;
             collided_primers.insert(primer);
-        }    
+        }
 
         // selection_list.push_back(selection);
         // payload_transformed_result.push_back()

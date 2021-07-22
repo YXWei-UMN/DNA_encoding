@@ -17,6 +17,7 @@ using namespace std;
 // 2. strand name is "payload[id], e.g., "payload12345"
 // 3. both the primer and strand id are counted from 0, and the max id does not exceed uint range
 // 4. For each primer, there is a line beginning with "# Query:", this is used to count the number of total primers
+// 5. n_strand only count the strand that appears in the blast result(i.e., strands that have collisions)
 
 class TransformSelection{
 public:
