@@ -14,8 +14,6 @@
 #include <sstream>
 #include <cstring>
 
-
-
 class DNA_encoder {
 public:
     DNA_encoder();

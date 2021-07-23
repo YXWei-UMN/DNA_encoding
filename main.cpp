@@ -27,17 +27,17 @@ int main(int argc, char** argv) {
     // cout << "result = " << result << endl;
 
     // test transformation selection baseline
-    string encoding_blast_result_path[4] = {
-        "/home/umhadmin/huibing/dna/data/test_payload_C/blast_test_payload_C_evalue50_200strand",
-        "/home/umhadmin/huibing/dna/data/test_swap_1/blast_evalue50_test_swap_1_200strand",
-        "/home/umhadmin/huibing/dna/data/test_swap_3/blast_evalue50_test_swap_3_200strand",
-        "/home/umhadmin/huibing/dna/data/test_swap_5/blast_test_swap_5_evalue50_200strand"};
-    
     // string encoding_blast_result_path[4] = {
-    //     "/home/umhadmin/huibing/dna/data/selection_test/blast0",
-    //     "/home/umhadmin/huibing/dna/data/selection_test/blast1",
-    //     "/home/umhadmin/huibing/dna/data/selection_test/blast2",
-    //     "/home/umhadmin/huibing/dna/data/selection_test/blast3"};
+    //     "/home/umhadmin/huibing/dna/data/test_payload_C/blast_test_payload_C_evalue50_200strand",
+    //     "/home/umhadmin/huibing/dna/data/test_swap_1/blast_evalue50_test_swap_1_200strand",
+    //     "/home/umhadmin/huibing/dna/data/test_swap_3/blast_evalue50_test_swap_3_200strand",
+    //     "/home/umhadmin/huibing/dna/data/test_swap_5/blast_test_swap_5_evalue50_200strand"};
+    
+    string encoding_blast_result_path[4] = {
+        "/home/umhadmin/huibing/dna/data/select_test_folder/encoding0/",
+        "/home/umhadmin/huibing/dna/data/select_test_folder/encoding1/",
+        "/home/umhadmin/huibing/dna/data/select_test_folder/encoding2/",
+        "/home/umhadmin/huibing/dna/data/select_test_folder/encoding3/"};
     
     TransformSelection selection(encoding_blast_result_path);
     selection.Select();
