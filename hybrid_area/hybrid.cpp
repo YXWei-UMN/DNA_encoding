@@ -7,6 +7,7 @@
 #include <vector>
 #include <map>
 #include <algorithm>
+#include <unordered_map>
 
 using namespace std;
 
@@ -28,8 +29,11 @@ using namespace std;
 // };
 
 
+// blind spot can be changed to unordered_map
+//unordered_map<int,int> blind_spot;
+//vector<int> blind_spot;
+vector<bool> blind_spot;
 
-vector<int> blind_spot;
 //map<pair<unsigned int, unsigned int>,string> collision_list;// vector
 vector<pair<pair<unsigned int, unsigned int>,string>> collision_list;
 vector<unsigned int> cut_positions;
@@ -50,28 +54,34 @@ bool collision_sort(pair<pair<unsigned int, unsigned int>,string> i, pair<pair<u
 }
 
 void init_blind_spot(){
-    for (int i=10;i<=140;i+=10){
-        blind_spot.push_back(i);
+    for (int i = 0;i<=44;i++){
+        blind_spot.push_back(false);
     }
-    blind_spot.push_back(170);
-    blind_spot.push_back(180);
-    for (int i=210;i<=290;i+=10){
-        blind_spot.push_back(i);
+    for (int i=1;i<=14;i++){
+        blind_spot[i]=true;
     }
-    blind_spot.push_back(330);
-    blind_spot.push_back(370);
-    for (int i=410;i<=440;i+=10){
-        blind_spot.push_back(i);
+    blind_spot[17]=true;
+    blind_spot[18]=true;
+    for (int i=21;i<=29;i++){
+        blind_spot[i]=true;
+    }
+    blind_spot[33]=true;
+    blind_spot[37]=true;
+    for (int i=41;i<=44;i++){
+        blind_spot[i]=true;
     }
 };
 
 // retrun true if the distance is within the blind spot list
 // return false otherwise
 bool check_blind_spot(int dis){
-    for(auto i=0;i<blind_spot.size();i++){
-        if (dis==blind_spot[i])return true;
-    }
-    return false;
+    if (dis>=450){return false;}
+    return blind_spot[(dis/10)];
+
+    // for(auto i=0;i<blind_spot.size();i++){
+    //     if (dis==blind_spot[i])return true;
+    // }
+    // return false;
 };
 
 // cut==0 means there is no appropriate cut position
@@ -159,15 +169,15 @@ int main(int argc, char** argv) {
     sort(collision_list.begin(),collision_list.end(),collision_sort);
 
     // check sort function
-    cout<<"start\tend\tprimer\tuncuttable_or_not\tcut_pos"<<endl;
-    for (auto it=collision_list.begin();it!=collision_list.end();it++){
-        cout<<it->first.first<<" "<<it->first.second<<" "<<it->second<<" ";
-        auto cut = find_cut_pos(it->first.first,it->first.second);
-        if (cut == 0 ){cout<<" y ";cut = find_trivial_cut_pos(it->first.first,it->first.second);}
-        else{cout<<" n ";}
-        cout<<cut<<endl;
-    }
-    cout<<">>>>>>>>>>>>>>>"<<endl;
+    // cout<<"start\tend\tprimer\tuncuttable_or_not\tcut_pos"<<endl;
+    // for (auto it=collision_list.begin();it!=collision_list.end();it++){
+    //     cout<<it->first.first<<" "<<it->first.second<<" "<<it->second<<" ";
+    //     auto cut = find_cut_pos(it->first.first,it->first.second);
+    //     if (cut == 0 ){cout<<" y ";cut = find_trivial_cut_pos(it->first.first,it->first.second);}
+    //     else{cout<<" n ";}
+    //     cout<<cut<<endl;
+    // }
+    // cout<<">>>>>>>>>>>>>>>"<<endl;
 
     init_blind_spot();
 
@@ -289,13 +299,40 @@ int main(int argc, char** argv) {
 
     unsigned int total_len = collision_list[collision_list.size()-1].first.second;
     unsigned int hybrid_len = 0; 
-    cout<<"Existing hybrid area"<<endl;
+    //cout<<"Existing hybrid area"<<endl;
     //int not_150_count = 0; 
     for (auto it = hybrid_area.begin();it<hybrid_area.end();it++){
-        cout<<it->first<<" "<<it->second<<endl;
+        //cout<<it->first<<" "<<it->second<<endl;
         //if (it->second-it->first != 150){not_150_count++;}
         hybrid_len += (it->second - it->first);
     }
+
+    unsigned int dense_len_before_expan = 0;
+    for(auto i=0;i<collision_list.size();i++){
+        auto start = collision_list[i].first.first;
+        auto end = collision_list[i].first.second;
+        auto cut = find_cut_pos(start,end);
+
+        if (cut==0){
+            dense_len_before_expan += 10;
+            cut = find_trivial_cut_pos(start,end);
+        }
+        if (i!=collision_list.size()-1){
+            auto next_start = collision_list[i+1].first.first;
+            auto next_end = collision_list[i+1].first.second;
+            auto next_cut = find_cut_pos(next_start,next_end);
+            if (next_cut==0){
+                next_cut = find_trivial_cut_pos(next_start,next_end);
+            }
+            if (check_blind_spot(next_cut-cut)){
+                dense_len_before_expan += (next_cut-cut);
+            }
+        }
+    }
+    cout<<">>>>>>>>>>>"<<endl;
+    //check dense area before expansion
+    cout<<"dense area before expansion: "<<dense_len_before_expan<<endl;
+    cout<<"dense area after expansion: "<<hybrid_len<<endl;
     cout<<">>>>>>>>>>>"<<endl;
     cout<<"hybrid length: "<<hybrid_len<<endl;
     cout<<"total length: "<<total_len<<endl;
