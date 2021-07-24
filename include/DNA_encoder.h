@@ -14,8 +14,6 @@
 #include <sstream>
 #include <cstring>
 
-
-
 class DNA_encoder {
 public:
     DNA_encoder();
@@ -45,7 +43,6 @@ public:
     string direct_encoding(string digital_data);
 
     void randomize_XOR(string& digital_data);
-    void listFiles(string baseDir, bool recursive);
 
     string pseudo_random_sequence_;
     vector<string> all_files_;

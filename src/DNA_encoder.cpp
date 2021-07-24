@@ -486,27 +486,6 @@ void DNA_encoder::initial_rotating_encoding_table() {
     rotating_encoding_table_.push_back(bit_value_2);
 }
 
-void DNA_encoder::listFiles(string baseDir, bool recursive)
-{
-    DIR *dp;
-    struct dirent *dirp;
-    if ((dp = opendir(baseDir.c_str())) == NULL) {
-        cout << "[ERROR: " << errno << " ] Couldn't open " << baseDir << "." << endl;
-        return;
-    } else {
-        while ((dirp = readdir(dp)) != NULL) {
-            if (dirp->d_name != string(".") && dirp->d_name != string("..")) {
-                if (isDir(baseDir + dirp->d_name) == true && recursive == true) {
-                    //all_files_.push_back(baseDir + dirp->d_name);
-                    listFiles(baseDir + dirp->d_name + "/", true);
-                } else {
-                    all_files_.push_back(baseDir + dirp->d_name);
-                }
-            }
-        }
-        closedir(dp);
-    }
-}
 
 void DNA_encoder::init_RS_table() {
     RS_table[0] = "ACA"; RS_table[1] = "CCA"; RS_table[2] = "GCA";
@@ -537,7 +516,7 @@ DNA_encoder::DNA_encoder() {
 
 
     // record all file's path, use to read file & encode it
-    listFiles(g_data_path, true);
+    all_files_ = listFiles(g_data_path, true);
 
     //initial rotating_encoding_table
     initial_rotating_encoding_table();
