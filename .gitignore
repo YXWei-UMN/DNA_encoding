@@ -3,6 +3,7 @@
 test_config.cfg
 
 /.vscode/
+.DS_Store
 
 /build/
 
