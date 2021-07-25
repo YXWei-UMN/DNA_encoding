@@ -5,6 +5,10 @@
 #include "../include/global.h"
 
 
+ string g_blast_result_path_1;
+ string g_blast_result_path_2;
+ string g_blast_result_path_3;
+ string g_blast_result_path_4;
 
 string g_data_path;
 string g_payload_path;
@@ -48,6 +52,18 @@ int Parse(string cfgfile){
                 break;
             case hash_("data_path"):
                 g_data_path = value;
+                break;
+            case hash_("blast_result_path_1"):
+                g_blast_result_path_1 = value;
+                break;
+            case hash_("blast_result_path_2"):
+                g_blast_result_path_2 = value;
+                break;
+            case hash_("blast_result_path_3"):
+                g_blast_result_path_3 = value;
+                break;
+            case hash_("blast_result_path_4"):
+                g_blast_result_path_4 = value;
                 break;
             case hash_("payload_path"):
                 g_payload_path = value;

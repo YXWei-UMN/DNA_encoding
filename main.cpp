@@ -34,10 +34,10 @@ int main(int argc, char** argv) {
     //     "/home/umhadmin/huibing/dna/data/test_swap_5/blast_test_swap_5_evalue50_200strand"};
     
     string encoding_blast_result_path[4] = {
-        "/home/umhadmin/huibing/dna/data/select_test_folder/encoding0/",
-        "/home/umhadmin/huibing/dna/data/select_test_folder/encoding1/",
-        "/home/umhadmin/huibing/dna/data/select_test_folder/encoding2/",
-        "/home/umhadmin/huibing/dna/data/select_test_folder/encoding3/"};
+        g_blast_result_path_1,
+        g_blast_result_path_2,
+        g_blast_result_path_3,
+        g_blast_result_path_4};
     
     TransformSelection selection(encoding_blast_result_path);
     selection.Select();

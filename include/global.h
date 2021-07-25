@@ -37,6 +37,12 @@ using namespace std;
 
 extern string g_data_path;
 extern string g_payload_path;
+
+extern string g_blast_result_path_1;
+extern string g_blast_result_path_2;
+extern string g_blast_result_path_3;
+extern string g_blast_result_path_4;
+
 extern bool g_if_chunk;
 extern bool g_if_dedupe;
 extern bool g_if_pre_stranding;
