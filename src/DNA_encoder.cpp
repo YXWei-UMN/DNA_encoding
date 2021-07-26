@@ -233,46 +233,24 @@ void DNA_encoder::encoding_stranding(){
 
             string digital_data ((char*)ptr,len);
 
-            // randomize digital video_data (XOR)
-            if (g_if_randomization){
-                randomize_XOR(digital_data);
-            }
 
             // rotate code
             if(g_encoding_scheme==1){
                 string strand=base3_rotate_encoding(digital_data);
                 payload_file<<">payload"<<strand_num++<<endl;
                 // execute transformation: mapping/swap/...
-                if (g_if_mapping){
-                    string permutated_strand = mapping(strand);
-                    payload_file<<permutated_strand<<endl;
-                    total_len += permutated_strand.length();
-                } else if(g_swap_granularity>0){
-                    string permutated_strand = swap(strand);;
-                    payload_file<<permutated_strand<<endl;
-                    total_len += permutated_strand.length();
-                } else{
-                    payload_file<<strand<<endl;
-                    total_len += strand.length();
-                }
+                payload_file<<strand<<endl;
+                total_len += strand.length();
+
                     
             }
             else if(g_encoding_scheme==0){
                 string strand=direct_encoding(digital_data);
                 payload_file<<">payload"<<strand_num++<<endl;
                 // execute transformation: mapping/swap/...
-                if (g_if_mapping){
-                    string permutated_strand = mapping(strand);
-                    payload_file<<permutated_strand<<endl;
-                    total_len += permutated_strand.length();
-                } else if(g_swap_granularity>0){
-                    string permutated_strand = swap(strand);;
-                    payload_file<<permutated_strand<<endl;
-                    total_len += permutated_strand.length();
-                } else {
-                    payload_file<<strand<<endl;
-                    total_len += strand.length();
-                }
+                payload_file<<strand<<endl;
+                total_len += strand.length();
+
                     
             }
             else if(g_encoding_scheme==2){
@@ -304,19 +282,8 @@ void DNA_encoder::encoding_stranding(){
                     string strand = FEC_encoding(digital_strand);
                     payload_file<<">payload"<<strand_num++<<endl;
                     // execute transformation: mapping/swap/...
-                    if (g_if_mapping){
-                        string permutated_strand = mapping(strand);
-                        payload_file<<permutated_strand<<endl;
-                        total_len += permutated_strand.length();
-                    } else if(g_swap_granularity>0){
-                        string permutated_strand = swap(strand);;
-                        payload_file<<permutated_strand<<endl;
-                        total_len += permutated_strand.length();
-                    } else{
-                        payload_file<<strand<<endl;
-                        total_len += strand.length();
-                    }
-                        
+                    payload_file<<strand<<endl;
+                    total_len += strand.length();
                     if (g_if_ECC){
                         digital_data.erase(0, 38);
                     }
@@ -332,34 +299,6 @@ void DNA_encoder::encoding_stranding(){
                 cout<<"no encoding scheme"<<endl;
 
         }
-        fclose(fp);
-    }
-    payload_file.close();
-}
-
-void DNA_encoder::encoding_file(){
-    // create payload file to store encoded strands
-    fstream payload_file;
-    payload_file.open(g_payload_path,ios::out);
-
-    long int strand_num=0;
-    //create reading buffer
-    uint8_t buf[1024*1024];
-    //go over all files to chunking and encoding
-    FILE *fp;
-    string strand;
-    for(auto n:all_files_){
-        payload_file<<">payload"<<strand_num++<<endl;
-        fp = fopen(n.c_str(), "r");
-        if (fp==NULL) {fputs ("File open error",stderr); exit (1);}
-        while ( !feof(fp) ) {
-            size_t len = fread(buf, 1, sizeof(buf), fp);
-            uint8_t *ptr = &buf[0];
-            string digital_data ((char*)ptr,len);
-            strand=base3_rotate_encoding(digital_data);
-            payload_file<<strand;
-        }
-        payload_file<<endl;
         fclose(fp);
     }
     payload_file.close();

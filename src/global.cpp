@@ -18,9 +18,6 @@ bool g_if_randomization;
 bool g_if_pre_stranding;
 bool g_if_ECC;
 int g_encoding_scheme;
-long g_payload_size;
-long g_chunk_size;
-long g_strand_length;
 int g_swap_granularity;
 int Parse(string cfgfile){
     ifstream filestream(cfgfile, ios_base::in);
@@ -40,15 +37,6 @@ int Parse(string cfgfile){
         getline(ss, value, ' ');
 
         switch(hash_(key.c_str())){
-            case hash_("swap_granularity"):
-                g_swap_granularity = stoi(value);
-                break;
-            case hash_("strand_length"):
-                g_strand_length = stol(value);
-                break;
-            case hash_("payload_size"):
-                g_payload_size = stol(value);
-                break;
             case hash_("data_path"):
                 g_data_path = value;
                 break;
@@ -75,9 +63,6 @@ int Parse(string cfgfile){
                 break;
             case hash_("if_randomization"):
                 g_if_randomization = (value=="true");
-                break;
-            case hash_("if_mapping"):
-                g_if_dedupe = (value=="true");
                 break;
             case hash_("encoding_scheme"):
                 g_encoding_scheme = stoi(value);
