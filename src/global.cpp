@@ -12,8 +12,7 @@
 
 string g_data_path;
 string g_payload_path;
-bool g_if_dedupe;
-bool g_if_chunk;
+int g_program;
 bool g_if_mapping;
 bool g_if_randomization;
 bool g_if_pre_stranding;
@@ -82,6 +81,9 @@ int Parse(string cfgfile){
                 break;
             case hash_("encoding_scheme"):
                 g_encoding_scheme = stoi(value);
+                break;
+            case hash_("program"):
+                g_program = stoi(value);
                 break;
             default:
                 cout<<"unknown cfg: "<<key<<endl;

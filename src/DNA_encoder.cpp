@@ -408,6 +408,8 @@ void DNA_encoder::encoding_no_strand(){
                 nt_sequence=base3_rotate_encoding(digital_data);
             else if (g_encoding_scheme==2)
                 nt_sequence=FEC_encoding(digital_data);
+            else if (g_encoding_scheme==3)
+                nt_sequence=ReedSolomon_encoding(digital_data);
             else
                 cout<<"no encoding scheme"<<endl;
             payload_file<<nt_sequence;

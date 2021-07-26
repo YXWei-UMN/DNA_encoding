@@ -43,6 +43,7 @@ extern string g_blast_result_path_2;
 extern string g_blast_result_path_3;
 extern string g_blast_result_path_4;
 
+
 extern bool g_if_chunk;
 extern bool g_if_dedupe;
 extern bool g_if_pre_stranding;
@@ -50,6 +51,7 @@ extern bool g_if_ECC;
 extern bool g_if_mapping;
 extern bool g_if_randomization;
 extern int g_encoding_scheme;
+extern int g_program;
 
 extern long g_payload_size;
 extern long g_chunk_size;

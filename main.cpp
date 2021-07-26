@@ -19,29 +19,21 @@ int main(int argc, char** argv) {
         return -1;
     }
 
-    DNA_encoder dnaEncoder;
+    if (g_program==1){
+        DNA_encoder dnaEncoder;
+    }
+    else if (g_program == 2){
+        string encoding_blast_result_path[4] = {
+                g_blast_result_path_1,
+                g_blast_result_path_2,
+                g_blast_result_path_3,
+                g_blast_result_path_4};
 
-    
-    // test RS encoding
-    // string result = dnaEncoder.ReedSolomon_encoding("Since synthesis and sequencing of very long DNA strands is technically impeded, , data must be stored on several short DNA segments, which cannot be arranged geometrically.");
-    // cout << "result = " << result << endl;
+        TransformSelection selection(encoding_blast_result_path);
+        selection.Select();
+        selection.PrintStatistics();
+    }
 
-    // test transformation selection baseline
-    // string encoding_blast_result_path[4] = {
-    //     "/home/umhadmin/huibing/dna/data/test_payload_C/blast_test_payload_C_evalue50_200strand",
-    //     "/home/umhadmin/huibing/dna/data/test_swap_1/blast_evalue50_test_swap_1_200strand",
-    //     "/home/umhadmin/huibing/dna/data/test_swap_3/blast_evalue50_test_swap_3_200strand",
-    //     "/home/umhadmin/huibing/dna/data/test_swap_5/blast_test_swap_5_evalue50_200strand"};
-    
-    string encoding_blast_result_path[4] = {
-        g_blast_result_path_1,
-        g_blast_result_path_2,
-        g_blast_result_path_3,
-        g_blast_result_path_4};
-    
-    TransformSelection selection(encoding_blast_result_path);
-    selection.Select();
-    selection.PrintStatistics();
 
 
     return 0;
