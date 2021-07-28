@@ -24,7 +24,8 @@ vector<string> listFiles(string baseDir, bool recursive)
             if (dirp->d_name != string(".") && dirp->d_name != string("..")) {
                 if (isDir(baseDir + dirp->d_name) == true && recursive == true) {
                     //all_files_.push_back(baseDir + dirp->d_name);
-                    listFiles(baseDir + dirp->d_name + "/", true);
+                    vector<string> tmp =listFiles(baseDir + dirp->d_name + "/", true);
+                    all_files.assign(tmp.begin(),tmp.end());
                 } else {
                     all_files.push_back(baseDir + dirp->d_name);
                 }
