@@ -62,11 +62,11 @@ string DNA_encoder::FEC_encoding(string digital_data) {
 //RS_encoding
 string DNA_encoder::ReedSolomon_encoding(string digital_data) {
     // step 0: padding to a multiple of 3
-    cout << "digital_data.size() = " << digital_data.size() << endl;
+    //cout << "digital_data.size() = " << digital_data.size() << endl;
     while (digital_data.size() % 30 != 0){
         digital_data = digital_data + '\0';
     }
-    cout << "digital_data.size() = " << digital_data.size() << endl;
+    //cout << "digital_data.size() = " << digital_data.size() << endl;
 
     // step 1: apply RS encoding on each 30-bytes block
     const int MSG_LENGTH = 30;
@@ -75,8 +75,8 @@ string DNA_encoder::ReedSolomon_encoding(string digital_data) {
     RS::ReedSolomon<MSG_LENGTH, ECC_LENGTH> rs;
 
     int n_rs_unit = digital_data.size() / MSG_LENGTH;
-    cout << "n_rs_unit = " << n_rs_unit << endl;
-    cout << "encoded_unit_length = " << ENCODED_LENGTH * n_rs_unit << endl;
+    //cout << "n_rs_unit = " << n_rs_unit << endl;
+    //cout << "encoded_unit_length = " << ENCODED_LENGTH * n_rs_unit << endl;
     char rs_result[ENCODED_LENGTH * n_rs_unit];
     for (int i = 0, j = 0; i < digital_data.size(); i += MSG_LENGTH, j += ENCODED_LENGTH) {
         char message[MSG_LENGTH+1];
@@ -90,12 +90,12 @@ string DNA_encoder::ReedSolomon_encoding(string digital_data) {
         // cout << "encoded length = " << strlen(cur_encoded) << endl;
         memcpy(rs_result + j, cur_encoded, ENCODED_LENGTH);
     }
-    cout << "rs_result" << rs_result << endl;
+    //cout << "rs_result" << rs_result << endl;
 
     // step 2: apply mapping from encoded bytes to nt
     int total_rs_len = ENCODED_LENGTH * n_rs_unit;
     int result_len = total_rs_len / 2 * 3 * 3; // 2 -> two 256-base number to use; 3 -> three 47-base number generated; 3 -> three nt for each 47-base number
-    cout << "result_len = " << result_len << endl;
+    //cout << "result_len = " << result_len << endl;
     char result_cstring[result_len+1];
     result_cstring[result_len] = '\0';
 
@@ -118,7 +118,7 @@ string DNA_encoder::ReedSolomon_encoding(string digital_data) {
             for (int k2 = 0; k2 < 3; k2++) {
                 // cout << j << ' ' << base47_num[k1] << ' ' << endl;;
                 result_cstring[j++] = RS_table[base47_num[k1]][k2];
-                cout << j-1 << ' ' << RS_table[base47_num[k1]][k2] << endl;
+                //cout << j-1 << ' ' << RS_table[base47_num[k1]][k2] << endl;
             }
         }
 
