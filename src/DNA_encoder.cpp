@@ -462,7 +462,7 @@ DNA_encoder::DNA_encoder() {
     for(auto n:all_files_){
         cout<<n<<endl;
     }
-    /*//initial rotating_encoding_table
+    //initial rotating_encoding_table
     initial_rotating_encoding_table();
 
     initial_FEC_table();
@@ -481,5 +481,5 @@ DNA_encoder::DNA_encoder() {
     //encoding_stranding();
     //encode without strand
     //encoding_no_strand();
-    //encoding_file();*/
+    //encoding_file();
 }
