@@ -459,7 +459,10 @@ DNA_encoder::DNA_encoder() {
     // record all file's path, use to read file & encode it
     all_files_ = listFiles(g_data_path, true);
 
-    //initial rotating_encoding_table
+    for(auto n:all_files_){
+        cout<<n<<endl;
+    }
+    /*//initial rotating_encoding_table
     initial_rotating_encoding_table();
 
     initial_FEC_table();
@@ -478,5 +481,5 @@ DNA_encoder::DNA_encoder() {
     //encoding_stranding();
     //encode without strand
     //encoding_no_strand();
-    //encoding_file();
+    //encoding_file();*/
 }
