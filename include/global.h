@@ -43,6 +43,8 @@ extern string g_blast_result_path_2;
 extern string g_blast_result_path_3;
 extern string g_blast_result_path_4;
 
+extern string g_blast_result_path_varlen;
+
 
 extern bool g_if_chunk;
 extern bool g_if_dedupe;

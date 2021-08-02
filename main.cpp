@@ -3,6 +3,7 @@
 #include "include/DNA_encoder.h"
 #include "rs.hpp"
 #include "transform_selection.h"
+#include "variable_length.h"
 #define ECC_LENGTH 8
 
 int main(int argc, char** argv) {
@@ -32,6 +33,10 @@ int main(int argc, char** argv) {
         TransformSelection selection(encoding_blast_result_path);
         selection.Select();
         selection.PrintStatistics();
+    }
+    else if (g_program == 3){
+        VariableLength varlen(g_blast_result_path_varlen);
+        varlen.Cut();
     }
 
 

@@ -38,7 +38,7 @@ private:
 
     set<string> all_primers; // all primer names(w/o collisions)
 
-    map<unsigned int, vector<unsigned int> > collision_list[4]; // collision_list[i][j]: a set of primer ids of [encoding i, payload j]
+    unordered_map<unsigned int, vector<unsigned int> > collision_list[4]; // collision_list[i][j]: a set of primer ids of [encoding i, payload j]
     set<unsigned int> collided_primers; // collided_primers after selection
     // vector<bool> primer_is_collided;
     set<unsigned int> collided_primers_default; // collided_primers using the default encoding

@@ -10,6 +10,8 @@
  string g_blast_result_path_3;
  string g_blast_result_path_4;
 
+string g_blast_result_path_varlen;
+
 string g_data_path;
 string g_payload_path;
 int g_program;
@@ -51,6 +53,9 @@ int Parse(string cfgfile){
                 break;
             case hash_("blast_result_path_4"):
                 g_blast_result_path_4 = value;
+                break;
+            case hash_("blast_result_path_varlen"):
+                g_blast_result_path_varlen = value;
                 break;
             case hash_("payload_path"):
                 g_payload_path = value;
