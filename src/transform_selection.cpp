@@ -13,7 +13,7 @@ TransformSelection::TransformSelection(string path[4]) {
     n_primer = 0;
 
     for (int i = 0; i < 4; i++) {
-        all_files[i] = listFiles(path[i], false);
+        all_files[i] = listFiles(path[i], true);
         sort(all_files[i].begin(), all_files[i].end());
     }
 

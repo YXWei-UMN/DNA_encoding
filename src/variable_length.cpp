@@ -15,7 +15,7 @@ using namespace std;
 
 VariableLength::VariableLength(string path) {
     n_primer = 0;
-    all_files = listFiles(path, false);
+    all_files = listFiles(path, true);
     cout << "The number of files: " << all_files.size() << endl;
 
     //Initialize blind spot
@@ -86,7 +86,7 @@ void VariableLength::ReadCollisions(string path) {
         // cout << "StrandID: " << strand_id << endl << flush;
 
         // read collsion position
-        for (int i = 0; i < 7; i++) {
+        for (int i = 0; i < 6; i++) {
             iss >> current_field;
         }
         iss >> current_field;
