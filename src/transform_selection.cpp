@@ -13,7 +13,7 @@ TransformSelection::TransformSelection(string path[4]) {
     n_primer = 0;
 
     for (int i = 0; i < 4; i++) {
-        all_files[i] = listFiles(path[i], false);
+        all_files[i] = listFiles(path[i], true);
         sort(all_files[i].begin(), all_files[i].end());
     }
 
@@ -32,7 +32,6 @@ void TransformSelection::ReadCollisions(string path[4]) {
     for (int i = 0; i < 4; i++) {
         collision_list[i].clear();
     }
-
     
     for (int i = 0; i < 4; i++) {
         string &cur_path = path[i];
@@ -65,16 +64,6 @@ void TransformSelection::ReadCollisions(string path[4]) {
             primer_id = stoul(primer_name.substr(6));
             strand_id = stoul(strand_name.substr(7));
 
-            /*
-            for (int i = 1; i <= 6; i++) {
-                iss >> current_field;
-            }
-            iss >> current_field;
-            unsigned int strand_start = stoul(current_field);
-            iss >> current_field;
-            unsigned int strand_end = stoul(current_field);
-            if (strand_start > strand_end) swap(strand_start, strand_end);
-            */
             strand_id2name[strand_id] = strand_name;
             strand_name2id[strand_name] = strand_id;
 

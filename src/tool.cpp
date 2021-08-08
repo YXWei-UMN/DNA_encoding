@@ -21,7 +21,7 @@ vector<string> listFiles(string baseDir, bool recursive)
         return all_files;
     } else {
         while ((dirp = readdir(dp)) != NULL) {
-            if (dirp->d_name != string(".") && dirp->d_name != string("..")) {
+            if (dirp->d_name[0] != '.') {
                 if (isDir(baseDir + dirp->d_name) == true && recursive == true) {
                     //all_files_.push_back(baseDir + dirp->d_name);
                     vector<string> tmp =listFiles(baseDir + dirp->d_name + "/", true);
