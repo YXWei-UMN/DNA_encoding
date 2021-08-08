@@ -11,36 +11,14 @@
 
 using namespace std;
 
-// important assumption: 
-// each collision could be cut at and only at one place
-// so each collision could be presented by a cut_pos
 
-// class collision{
-//     public:
-//         collision(unsigned int s, unsigned int e, string p){
-//             start_pos = s;
-//             end_pos = e;
-//             primer = p;
-//         }
-//     private:
-//         unsigned int start_pos;
-//         unsigned int end_pos;
-//         string primer;
-// };
-
-
-// blind spot can be changed to unordered_map
-//unordered_map<int,int> blind_spot;
-//vector<int> blind_spot;
 vector<bool> blind_spot;
-
 //map<pair<unsigned int, unsigned int>,string> collision_list;// vector
 vector<pair<pair<unsigned int, unsigned int>,string>> collision_list;
-vector<unsigned int> cut_positions;
 vector<pair<unsigned int, unsigned int>> hybrid_area;
-
-
+unsigned int total_len;
 int strand_length_list[4] = {150,160,190,200};
+
 bool collision_sort(pair<pair<unsigned int, unsigned int>,string> i, pair<pair<unsigned int, unsigned int>,string> j){
     auto a = i.first.first;
     auto b = j.first.first;
@@ -109,7 +87,6 @@ unsigned int find_trivial_cut_pos(unsigned int start, unsigned int end){
 
 };
 
-
 unsigned int check_until_not_blind_spot(unsigned int start, unsigned int end){
     int dis = end-start;
     for (auto i=0;i<16;++i){
@@ -125,72 +102,9 @@ void hybrid_area_append(unsigned int start, unsigned int end){
     hybrid_area.push_back(make_pair(start,end));
 }
 
-int main(int argc, char** argv) {
-
-    if (argc != 2) {
-        cerr << "argc must be 2" << endl;
-        return -1;
-    }
-
-    ifstream myfile;
-    myfile.open (argv[1]);   
-    string line;
-
-    //int count = 0;
-
-    // getting the collision information
-    while (getline(myfile,line)){
-        istringstream iss(line);
-        string a;
-        iss>>a;
-        
-        if (!strcmp(a.c_str(),"#")){
-            continue;
-        }
-        string primer = a.substr(6);
-        for (auto i=0;i<8;i++){
-            iss>>a;
-        }
-        unsigned int start = stoul(a);
-        iss>>a;
-        unsigned int end = stoul(a);
-        if (start>end){
-            unsigned int temp = end;
-            end = start;
-            start = temp;
-        }
-        collision_list.push_back(make_pair(make_pair(start,end),primer));
-
-
-        // count the first 10000 lines of blast result;
-        // count++;
-        // if (count>10000){break;}
-    }
-    sort(collision_list.begin(),collision_list.end(),collision_sort);
-
-    // check sort function
-    // cout<<"start\tend\tprimer\tuncuttable_or_not\tcut_pos"<<endl;
-    // for (auto it=collision_list.begin();it!=collision_list.end();it++){
-    //     cout<<it->first.first<<" "<<it->first.second<<" "<<it->second<<" ";
-    //     auto cut = find_cut_pos(it->first.first,it->first.second);
-    //     if (cut == 0 ){cout<<" y ";cut = find_trivial_cut_pos(it->first.first,it->first.second);}
-    //     else{cout<<" n ";}
-    //     cout<<cut<<endl;
-    // }
-    // cout<<">>>>>>>>>>>>>>>"<<endl;
-
-    init_blind_spot();
-
-    // check blind spot function
-    // for (auto it=blind_spot.begin();it!=blind_spot.end();it++){
-    //     cout<<*it<<endl;
-    // }
-    //cout<<check_blind_spot(450)<<endl;
-    // cout<<find_trivial_cut_pos(79,100)<<endl;
-    // cout<<find_trivial_cut_pos(80,100)<<endl;
-    // cout<<find_trivial_cut_pos(81,100)<<endl;
-
-
+// in-place update the hybrid area
+void seperate_hybrid_area(){
+    hybrid_area.clear();
     unsigned int cur_pos = 0;
 
     // illegal == 0 means the current collision is safe to be cut
@@ -205,6 +119,7 @@ int main(int argc, char** argv) {
         auto primer = collision_list[i].second;
 
         auto cut = find_cut_pos(start,end);
+        //cout<<cut<<endl;
         int prev_illegal = illegal;
         illegal = 0;
         if (cut==0){
@@ -214,24 +129,17 @@ int main(int argc, char** argv) {
         }
 
         if (!check_blind_spot(cut-cur_pos)){
-            if (prev_illegal==1){
-                hybrid_area_append(cur_pos,cut);
-                collision_count_in_hybrid_area++;
-            }
-            else{
+            if(illegal==0){
                 collision_count_in_sparse_area++;
             }
-            cur_pos = cut;
+            else{
+                collision_count_in_hybrid_area++;
+            }
 
-            // if (illegal==2){illegal--;collision_count_in_hybrid_area++;}
-            // else if (illegal==1){
-            //     hybrid_area_append(cur_pos,cut);
-            //     illegal = 0;
-            //     collision_count_in_hybrid_area++;
-            // }
-            // else{collision_count_in_sparse_area++;}
-            // cur_pos=cut;
-            
+            if (prev_illegal==1){
+                hybrid_area_append(cur_pos,cut);
+            }
+            cur_pos = cut;          
         }
         else{ // distance is illegal
                 // then check every point between cut and next_cut
@@ -241,7 +149,7 @@ int main(int argc, char** argv) {
                 // until we can find one
 
 
-            collision_count_in_hybrid_area++;
+            //collision_count_in_hybrid_area++;
             auto left = cur_pos;
             bool flag = false;
             while(!flag){
@@ -266,12 +174,18 @@ int main(int argc, char** argv) {
                         if(!check_blind_spot(it-cur_pos)  && !check_blind_spot(cut-it)){
                             hybrid_area_append(cur_pos,it);
                             cur_pos = cut;
+                            if(illegal){
+                                collision_count_in_hybrid_area++;
+                            }
+                            else{
+                                collision_count_in_sparse_area++;
+                            }
                             flag = true;
                             break;
                         }
                     }
+                    i++;
                 }
-                i++;
                 collision_count_in_hybrid_area++;
             }
         }
@@ -294,10 +208,40 @@ int main(int argc, char** argv) {
                 }
             }
         }
+        if(illegal!=0 && i==collision_list.size()-1){
+            auto left = cut;
+            auto right = check_until_not_blind_spot(cur_pos,cut);
+            hybrid_area_append(left,right);
+        }
+
     }
+    //cout<<"start combine"<<endl;
+    // combine the adjacent hybrid area
+    vector<pair<unsigned int, unsigned int>> new_hybrid_area;
+    new_hybrid_area.clear();
+    for (auto i=0;i<hybrid_area.size();i++){
+        auto left = hybrid_area[i].first;
+        auto right = hybrid_area[i].second;
+        while((i+1)!=hybrid_area.size() && right==hybrid_area[i+1].first){
+            right = hybrid_area[i+1].second;
+            i++;
+        }
+        new_hybrid_area.push_back(make_pair(left,right));
+    }
+    hybrid_area.clear();
+    hybrid_area = new_hybrid_area;
+    // for (auto it = hybrid_area.begin();it<hybrid_area.end();it++){
+    //     if ((it+1)!=hybrid_area.end()){
+    //         if (it->second==(it+1)->first){
+    //             it->second = (it+1)->second;
+    //             hybrid_area.erase(it+1);
+    //         }
+    //     }
+    // }
 
 
-    unsigned int total_len = collision_list[collision_list.size()-1].first.second;
+    // print 
+    //unsigned int total_len = collision_list[collision_list.size()-1].first.second;
     unsigned int hybrid_len = 0; 
     //cout<<"Existing hybrid area"<<endl;
     //int not_150_count = 0; 
@@ -307,6 +251,7 @@ int main(int argc, char** argv) {
         hybrid_len += (it->second - it->first);
     }
 
+    // calculate hybrid area before expansion
     unsigned int dense_len_before_expan = 0;
     for(auto i=0;i<collision_list.size();i++){
         auto start = collision_list[i].first.first;
@@ -329,7 +274,20 @@ int main(int argc, char** argv) {
             }
         }
     }
-    cout<<">>>>>>>>>>>"<<endl;
+
+    unsigned int num_of_dummy_collision = 0;
+    for(auto i = 0;i<collision_list.size();i++){
+        string primer = collision_list[i].second;
+        string dummy = "d";
+        if(primer.compare(dummy)==0){
+            num_of_dummy_collision+=1;
+        }
+    }
+    
+
+
+    cout<<"num of hybrid area: "<<hybrid_area.size()<<endl;
+    cout<<">>>>>>>>>>>information output>>>>>>>>>>>"<<endl;
     //check dense area before expansion
     cout<<"dense area before expansion: "<<dense_len_before_expan<<endl;
     cout<<"dense area after expansion: "<<hybrid_len<<endl;
@@ -339,168 +297,213 @@ int main(int argc, char** argv) {
     cout<<"percentage of hybrid area of total len: "<<(double)hybrid_len/total_len<<endl;
     cout<<">>>>>>>>>>>"<<endl;
     cout<<"collision_count_in_hybrid_area: "<<collision_count_in_hybrid_area<<endl;
-    cout<<"collision_count_in_sparse_area: "<<collision_count_in_sparse_area<<endl;
-    cout<<"total collision count: "<<collision_list.size()<<endl;
+    //cout<<"collision_count_in_hybrid_area: "<<collision_list.size()-collision_count_in_sparse_area<<endl;
+    cout<<"collision_count_in_sparse_area: "<<collision_count_in_sparse_area-num_of_dummy_collision<<endl;
+    cout<<"total collision count: "<<collision_list.size()-num_of_dummy_collision<<endl;
+    cout<<">>>>>>>>>>>"<<endl;
+    cout<<"num of dummy collisions: "<<num_of_dummy_collision<<endl;
+    cout<<endl;
 
-    
-    //cout<<not_150_count<<" "<<hybrid_area.size()<<endl;
-    //most of them are 150 nt area
 
-    return 0;
+    // insert dummy collisions
+    // for(auto i=0;i<hybrid_area.size();i++){
+    //     if(hybrid_area[i].first==0){
+    //         continue;
+    //     }
+    //     unsigned int start = hybrid_area[i].first - 5;
+    //     unsigned int end = hybrid_area[i].first + 5;
+    //     string dummy_primer = "0";
+    //     collision_list.push_back(make_pair(make_pair(start,end),dummy_primer));
+    // }
 }
 
-/*
+bool is_in_hybrid_area(unsigned int cut, unsigned int trivial_cut){
 
+    //if(cut!=0){trivial_cut = cut;}
+    //cout<<trivial_cut<<" "<<cut<<endl;
+    //if(cut!=0 && cut!=trivial_cut){cout<<"!!!"<<endl;}
 
+    if(hybrid_area.size()==0){return true;}
 
+    int area_index = 0;
+    // binary search in hybrid_area
+    int start = 0;
+    int end = hybrid_area.size()-1;
 
-        if(cut==0){
-            auto trivial_cut = find_trivial_cut_pos(start,end);
-            if(!check_blind_spot(trivial_cut-cur_pos)){
-                cur_pos = trivial_cut;
-                legal = false;
-                continue;
+    while(start<=end){
+        int mid = (start+end)/2;
+
+        if(hybrid_area[mid].first==trivial_cut){
+            if(trivial_cut==cut){
+                return false;
             }
             else{
-                auto left = check_back_until_not_blind_spot(cur_pos,trivial_cut);
-                if (left!=cur_pos){
-                    cur_pos = left;
-                }
-                auto right = check_until_not_blind_spot(left,trivial_cut);
-                hybrid_area_append(left,right);
-                continue;
+                return true;
             }
+        }
+        else if (hybrid_area[mid].first<trivial_cut){
+            start = mid + 1;
         }
         else{
-            if (!check_blind_spot(cut-cur_pos)){// distance is legal
-                cur_pos = cut;
-                legal = true;
-                continue;
-            }
-            else { // distance is illegal
-
-            }
-        }
-
-
-
-        if (cut==0){
-            auto trivial_cut = find_trivial_cut_pos(start,end);
-            if (!check_blind_spot(trivial_cut-cur_pos)){
-                cur_pos = trivial_cut;
-                // left boundary of hybrid area is trivial cut
-                // explore the right boundary of hybrid area
-                if (i==collision_list.size()-1){
-                    auto right_boundary = check_until_not_blind_spot(trivial_cut,trivial_cut);
-                    hybrid_area_append(trivial_cut,right_boundary);
-                    continue;
-                }
-                else{
-                    auto next_start = collision_list[i+1].first.first;
-                    auto next_end = collision_list[i+1].first.second;
-                    auto next_cut = find_cut_pos(next_start,next_end);
-                    if(next_cut==0){
-                        auto next_trivial_cut = find_trivial_cut_pos(next_start,next_end);
-                        if(!check_blind_spot(next_trivial_cut-trivial_cut)){
-                            hybrid_area_append(trivial_cut,next_trivial_cut);
-                            cur_pos = next_trivial_cut;
-                            continue;
-                        }
-                        else{
-                            auto next_right = check_until_not_blind_spot(trivial_cut,next_trivial_cut);
-
-                        }
-                        
-                    }
-                }
-
-            }
-            else{
-                auto next_cut = check_until_not_blind_spot(cur_pos,trivial_cut);
-            }
-
-        }
-
-
-
-
-
-
-
-        if (cut==0){
-            hybrid_area_append(i,i);
-            continue;
-        }
-        else{
-            int dis = cut - cur_pos;
-            if (!check_blind_spot(dis)){// distance is legal
-                if (i==collision_list.size()-1){
-                    cur_pos = cut;
-                    continue;
-                }
-                else {
-                    auto next_start = collision_list[i+1].first.first;
-                    auto next_end = collision_list[i+1].first.second;
-                    auto next_cut = find_cut_pos(next_start,next_end);
-                    if (next_cut==0 || !check_blind_spot(next_cut-cut)){ // next collision is intrinsic or next cut is legal 
-                        cur_pos = cut;
-                        continue;
-                    }
-                    else{
-                        if (i==collision_list.size()-2){
-                            cur_pos = cut;
-                            continue;
-                        }
-                        else {
-                            auto next_next_start = collision_list[i+2].first.first;
-                            auto next_next_end = collision_list[i+2].first.second;
-                            auto next_next_cut = find_cut_pos(next_next_start,next_next_end);
-                            if (next_next_cut==0 || !check_blind_spot(next_cut-cut)){ // next collision is intrinsic or next cut is legal 
-                                cur_pos = cut;
-                                continue;
-                            }
-                        }
-                    }
-                }
-                
-            }
-            else{ // distance is illegal
-                cur_pos = cut;
-                hybrid_area_append(i,i);
-                continue;
-            }
+            end = mid - 1;
         }
     }
+    area_index = end + 1;
 
+    if(area_index==0){
+        return false;
+    }
+    else{
+        auto area_start = hybrid_area[area_index-1].first;
+        auto area_end = hybrid_area[area_index-1].second;
+        if(trivial_cut>area_start && trivial_cut<area_end){
+            return true;
+        }
+        else{
+            return false;
+        }
+    }
+}
 
-    // auto it=collision_list.begin();
-    // while(it!=collision_list.end()){
-    //     auto start = it->first.first;
-    //     auto end = it->first.second;
-    //     auto cut = find_cut_pos(start,end);
-    //     cout<<cut<<endl;
+void construct_collision_list(int file_index, char** argv){
+    if(file_index < 1 || file_index > 4){
+        cerr << "wrong file index" << endl;
+        return;
+    }
 
-    //     if (cut!=0){
-    //         int dis = cut - cur_pos;
-    //         if (!check_blind_spot(dis)){ // distance is legal
-    //             cut_positions.push_back(cut);
-    //             cur_pos = cut;
-    //             it++;
-    //             continue;
-    //         }
-    //     }
-    //     else{ // cut == 0
-    //         hybrid_area_append(start,end);
-    //     }
-    //     it++;
+    collision_list.clear();
 
+    ifstream myfile;
+    myfile.open (argv[file_index]);   
+    string line;
 
+    int count =0;
+    while (getline(myfile,line)){
+        
+
+        istringstream iss(line);
+        string a;
+        iss>>a;
+        
+        if (!strcmp(a.c_str(),"#")){
+            continue;
+        }
+        string primer = a.substr(6);
+        for (auto i=0;i<8;i++){
+            iss>>a;
+        }
+        unsigned int start = stoul(a);
+        iss>>a;
+        unsigned int end = stoul(a);
+        if (start>end){
+            unsigned int temp = end;
+            end = start;
+            start = temp;
+        }
+
+        
+        auto cut = find_cut_pos(start,end);
+        auto trivial_cut = find_trivial_cut_pos(start,end);
+        if(is_in_hybrid_area(cut,trivial_cut)){
+            collision_list.push_back(make_pair(make_pair(start,end),primer));
+        }
+        // count++;
+        // if(count>=100){break;}
+        
+        //collision_list.push_back(make_pair(make_pair(start,end),primer));
+
+        
+    }
+
+    // insert dummy collisions
+    for(auto i=0;i<hybrid_area.size();i++){
+        if(hybrid_area[i].first==0){
+            continue;
+        }
+        unsigned int start = hybrid_area[i].first - 5;
+        unsigned int end = hybrid_area[i].first + 5;
+        string dummy_primer = "d";
+        collision_list.push_back(make_pair(make_pair(start,end),dummy_primer));
+    }
+
+    sort(collision_list.begin(),collision_list.end(),collision_sort);
+    unsigned int len = collision_list[collision_list.size()-1].first.second;
+
+    if(len>total_len){total_len = len;}
+    // if (file_index==1){
+    //     total_len = collision_list[collision_list.size()-1].first.second;
     // }
 
+    // cout<<"start\tend\tprimer\tuncuttable_or_not\tcut_pos"<<endl;
+    // for (auto it=collision_list.begin();it!=collision_list.end();it++){
+    //     cout<<it->first.first<<" "<<it->first.second<<" "<<it->second<<" ";
+    //     auto cut = find_cut_pos(it->first.first,it->first.second);
+    //     if (cut == 0 ){cout<<" y ";cut = find_trivial_cut_pos(it->first.first,it->first.second);}
+    //     else{cout<<" n ";}
+    //     cout<<cut<<endl;
+    // }
+    // cout<<">>>>>>>>>>>>>>>"<<endl;
+
+}
+
+void eliminate_collision_in_cut_area(){
+    vector<pair<pair<unsigned int, unsigned int>,string>> new_collision_list;
+    for (auto i=0;i<collision_list.size();i++){
+        auto start = collision_list[i].first.first;
+        auto end = collision_list[i].first.second;
+        auto cut = find_cut_pos(start,end);
+        auto trivial_cut = find_trivial_cut_pos(start,end);
+
+        if(is_in_hybrid_area(cut,trivial_cut)){
+        //if(1){
+            new_collision_list.push_back(collision_list[i]);
+        }
+    }
+    collision_list.clear();
+    collision_list = new_collision_list;
+}
+
+int main(int argc, char** argv) {
+
+    if (argc != 5) {
+        cerr << "argc must be 5" << endl;
+        return -1;
+    }
+    init_blind_spot();
+    collision_list.clear();
+    hybrid_area.clear();
+    total_len = 0;
 
 
+    for (int i = 0;i<4;i++){
+        construct_collision_list(i+1,argv);
+        // if(i!=0){
+        //     eliminate_collision_in_cut_area();
+        // }
+        seperate_hybrid_area();
+    }
+    
 
+    // check sort function
+    // cout<<"start\tend\tprimer\tuncuttable_or_not\tcut_pos"<<endl;
+    // for (auto it=collision_list.begin();it!=collision_list.end();it++){
+    //     cout<<it->first.first<<" "<<it->first.second<<" "<<it->second<<" ";
+    //     auto cut = find_cut_pos(it->first.first,it->first.second);
+    //     if (cut == 0 ){cout<<" y ";cut = find_trivial_cut_pos(it->first.first,it->first.second);}
+    //     else{cout<<" n ";}
+    //     cout<<cut<<endl;
+    // }
+    // cout<<">>>>>>>>>>>>>>>"<<endl;
+
+    // check blind spot function
+    // for (auto it=blind_spot.begin();it!=blind_spot.end();it++){
+    //     cout<<*it<<endl;
+    // }
+    //cout<<check_blind_spot(450)<<endl;
+    // cout<<find_trivial_cut_pos(79,100)<<endl;
+    // cout<<find_trivial_cut_pos(80,100)<<endl;
+    // cout<<find_trivial_cut_pos(81,100)<<endl;
 
     return 0;
 }
-*/
+
