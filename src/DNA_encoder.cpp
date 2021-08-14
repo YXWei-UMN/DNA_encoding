@@ -9,6 +9,9 @@
 #include <cstdlib>
 #include <cstring>
 #include <cassert>
+#include <cmath>
+#include <ctime>
+#include <cstdlib>
 
 //TODO other three code
 
@@ -486,4 +489,157 @@ DNA_encoder::DNA_encoder() {
     //encode without strand
     //encoding_no_strand();
     //encoding_file();
+}
+
+
+// Fountain code
+vector<float> DNA_encoder::ideal_distribution(int n) {
+    const float EPS = 1e-5;
+    assert(n > 0);
+
+    vector<float> possibilities;
+    possibilities.push_back(0.0);
+    possibilities.push_back(1.0 / n);
+    for (int i = 2; i <= n; i++) {
+        possibilities.push_back(1.0 / (i * (i-1)));
+    }
+    float sum = 0.0;
+    for (auto it = possibilities.begin(); it != possibilities.end(); it++) {
+        sum += *it;
+    }
+    assert(sum <= 1.0 + EPS);
+    assert(sum + EPS >= 1.0);
+
+    return possibilities;
+}
+
+vector<float> DNA_encoder::robust_distribution(int n) {
+    const float EPS = 1e-5;
+    const float ROBUST_FAILURE_PROBABILITY = 0.01;
+
+    int m = n / 2 + 1;
+    float r = (float)n / m;
+
+    vector<float> extra_proba;
+    extra_proba.push_back(0);
+    for (int i = 1; i < m; i++) {
+        extra_proba.push_back(1.0/(i*m));
+    }
+
+    extra_proba.push_back(log(r / ROBUST_FAILURE_PROBABILITY)/m);
+    for (int i = m + 1; i <= n; i++) {
+        extra_proba.push_back(0.0);
+    }
+    
+    vector<float> possibilities;
+    vector<float> ideal_probabilities = ideal_distribution(n);
+    float sum = 0.0;
+    for (int i = 0; i <= n; i++) {
+        possibilities.push_back(ideal_probabilities[i] + extra_proba[i]);
+        sum += possibilities[i];
+    }
+    assert(abs(sum) >= EPS);
+    for (int i = 0; i <= n; i++) {
+        possibilities[i] /= sum;
+    }
+    sum = 0.0;
+    for (int i = 0; i <= n; i++) {
+        sum += possibilities[i];
+    }
+    assert(sum + EPS >= 1.0);
+    assert(sum <= 1.0 + EPS);
+
+    return possibilities;
+}
+
+
+vector<string> DNA_encoder::Fountain_encoding(string digital_data, float redundancy_ratio = 0.07) {
+    if (digital_data.size() % 50 != 0) {
+        string append(50 - digital_data.size() % 50, '\0');
+        digital_data += append;
+    }
+
+    vector< bitset<400> > input;
+    for (int i = 0; i < digital_data.size(); i += 50) {
+        string ori = digital_data.substr(i, 50);
+        string binary = "";
+        for (int i = 0; i < ori.size(); i++) {
+            int num = ori[i];
+            string cur_binary(8, '\0');
+            for(int j = 7; j >= 0; j--) {
+                if (num & 1) cur_binary[j] = '1';
+                else cur_binary[j] = '0';
+                num >>= 1;
+            }
+            binary += cur_binary;
+        }
+        assert(binary.size() == 400);
+        bitset<400> segment(binary);
+        input.push_back(segment);
+    }
+    assert(input.size() * 50 == digital_data.size());
+
+    int n = input.size();
+    int n_out = (int)(n * (1 + redundancy_ratio)+0.5);
+    vector<float> p = robust_distribution(n);
+    vector<float> p_sum;
+    p_sum.resize(n+1);
+    p_sum[0] = 0.0;
+    for(int i = 1; i <= n; i++) {
+        p_sum[i] = p_sum[i-1] + p[i];
+    }
+    const float EPS = 1e-5;
+    assert(p_sum[n] <= 1.0 + EPS);
+    assert(p_sum[n] + EPS >= 1.0);
+
+    srand (time(NULL));
+    vector<string> result;
+    while(result.size() < n_out) {
+        float rand_num = (float)rand() / RAND_MAX;
+        assert(rand_num <= 1.0 + EPS);
+        int n_segment = lower_bound(p_sum.begin(), p_sum.end(), rand_num) - p_sum.begin();
+        assert(n_segment >= 0);
+        assert(n_segment <= n);
+
+        bitset<400> cur_bits;
+        for (int i = 0; i < n_segment; i++) {
+            int choice = rand() % n;
+            cur_bits ^= input[choice];
+        }
+
+        string cur_string(200, '\0');
+        int n_homo = 0;
+        bool flag_no_homo = true;
+        int n_GC = 0;
+        for (int i = 0, j = 0; i < 400 && j < 200; i += 2, j++) {
+            int convert_id = cur_bits[i] * 2 + cur_bits[i+1];
+            assert(convert_id >= 0);
+            assert(convert_id < 4);
+            switch(convert_id) {
+                case 0: cur_string[j] = 'A';
+                break;
+                case 1: cur_string[j] = 'G'; n_GC++;
+                break;
+                case 2: cur_string[j] = 'C'; n_GC++;
+                break;
+                case 3: cur_string[j] = 'T';
+            }
+
+            if (j > 0 && cur_string[j] == cur_string[j-1]) {
+                n_homo++;
+                if(n_homo >= 3) {
+                    flag_no_homo = false;
+                    break;
+                }
+            } else {
+                n_homo = 0;
+            }
+        }
+
+        if(flag_no_homo && n_GC >= 200 * 0.45 && n_GC <= 200 * 0.55) {
+            result.push_back(cur_string);
+        }
+    }
+
+    return result;
 }

@@ -38,6 +38,13 @@ public:
     void init_RS_table();
     string RS_table[48];
 
+
+    // Fountain code
+    vector<float> ideal_distribution(int n);
+    vector<float> robust_distribution(int n);
+    // input a string, output a set of 200-length AGCT nc sequence
+    vector<string> Fountain_encoding(string digital_data, float redundancy_ratio);
+
     uint16_t CCITT16(char *ptr, int length);
 
     string direct_encoding(string digital_data);
