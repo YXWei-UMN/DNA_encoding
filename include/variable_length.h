@@ -14,12 +14,11 @@ using namespace std;
 
 // Format assumptions:
 // 1. primer name is "primer[id]", e.g., "primer233"
-// 2. strand name is "payload[id], e.g., "payload12345"
+// 2. the `path` is a directory containing all the blast result files. Each file is a single long strand, and we assueme it is cut to 200nt strands
 // 3. both the primer and strand id are counted from 0, and the max id does not exceed uint range
 // 4. For each primer, there is a line beginning with "# Query:", followed by the primer name. This is used to count the number of total primers.
 // 5. n_strand only count the strand that appears in the blast result(i.e., strands with collisions)
-// 6. the `path` is a directory containing all the blast result files
-// 7. If a collision is at [start, end], we cut it at the nearest "multiple of 10 position" with (start+end)/2, i.e., round((start+end)/2)*0.1)*10
+// 6. If a collision is at [start, end], we cut it at the nearest "multiple of 10 position" with (start+end)/2, i.e., round((start+end)/2)*0.1)*10
 
 typedef unsigned int PrimerID;
 typedef unsigned int StrandID;
