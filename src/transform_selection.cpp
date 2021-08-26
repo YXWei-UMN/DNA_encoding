@@ -7,6 +7,7 @@
 #include <string>
 #include <utility>
 #include <climits>
+#include <string>
 using namespace std;
 
 TransformSelection::TransformSelection(string path[4]) {
@@ -24,14 +25,14 @@ TransformSelection::TransformSelection(string path[4]) {
     cout << "The number of seperated files: " << all_files[0].size() << endl;
 }
 
-void TransformSelection::ReadCollisions(string path[4]) {
-    strand_id2name.clear();
-    strand_name2id.clear();
+void TransformSelection::ReadCollisions(string path[4], string strand_id_prefix) {
     primer_id2name.clear();
     primer_name2id.clear();
     for (int i = 0; i < 4; i++) {
         collision_list[i].clear();
     }
+
+    const int STRAND_LENGTH = 200;
     
     for (int i = 0; i < 4; i++) {
         string &cur_path = path[i];
@@ -62,11 +63,28 @@ void TransformSelection::ReadCollisions(string path[4]) {
             unsigned int strand_id;
             iss >> primer_name >> strand_name;
             primer_id = stoul(primer_name.substr(6));
-            strand_id = stoul(strand_name.substr(7));
+            // strand_id = stoul(strand_name.substr(7));
 
-            strand_id2name[strand_id] = strand_name;
-            strand_name2id[strand_name] = strand_id;
 
+            // read collsion position
+            for (int i = 0; i < 6; i++) {
+                iss >> current_field;
+            }
+            iss >> current_field;
+            unsigned int strand_start = stoul(current_field);
+            iss >> current_field;
+            unsigned int strand_end = stoul(current_field);
+            if (strand_start > strand_end) swap(strand_start, strand_end);
+
+
+            strand_id = strand_start / STRAND_LENGTH;
+            // cout << "strand[start, end]:" << strand_start << "," << strand_end << endl;
+            // cout << "strand_id, strend_end_id: " << strand_id << " " << strand_end/STRAND_LENGTH << endl;
+            if (strand_id != strand_end / STRAND_LENGTH) continue;
+
+            string str_id =  strand_id_prefix + to_string(strand_id);
+            // cout << "id = " << str_id << endl;
+            strands.insert(str_id);
             primer_id2name[primer_id] = primer_name;
             primer_name2id[primer_name] = primer_id;
 
@@ -75,17 +93,16 @@ void TransformSelection::ReadCollisions(string path[4]) {
         }
     }
 
-    assert(strand_id2name.size() == strand_name2id.size());
     assert(primer_id2name.size() == primer_name2id.size());
-    n_strand += strand_id2name.size();
+    n_strand = strands.size();
     n_primer = all_primers.size();
 }
 
 void TransformSelection::Select() {
     for (int file_id = 0; file_id < all_files[0].size(); file_id++){
-        cout << "Processing file " << file_id << endl;
+        cout << "Transform selection: processing file #" << file_id << endl;
         string path[4] = {all_files[0][file_id], all_files[1][file_id], all_files[2][file_id], all_files[3][file_id]};
-        ReadCollisions(path); 
+        ReadCollisions(path, to_string(file_id)); 
 
         for (int i = 0; i < n_strand; i++) {
             vector<unsigned int> &current_collision_list = collision_list[0][i];
