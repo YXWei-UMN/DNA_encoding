@@ -22,14 +22,13 @@ using namespace std;
 
 bool isDir(string dir);
 
+unsigned int get_collisiton_cut_point(const Collision &c);
 bool CollisionPositionCMP(const Collision &c1,const Collision &c2);
 
 typedef unsigned int PrimerID;
 typedef unsigned int StrandID;
 typedef tuple<StrandID, unsigned int, unsigned int, PrimerID> Collision;
 typedef int CollisionPositionIndex;
-
-
 
 vector<string> listFiles(string baseDir, bool recursive);
 

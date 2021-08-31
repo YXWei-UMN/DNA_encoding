@@ -57,15 +57,11 @@ private:
     vector<string> all_files[4];
     set<string> all_primers; // all primer names(w/o collisions)
 
-    unordered_map<unsigned int, vector<Collision> > collision_list[4]; // collision_list[i][j]: a set of primer ids of [encoding i, payload j]
-    set<unsigned int> collided_primers; // collided_primers after selection
-    // vector<bool> primer_is_collided;
-    set<unsigned int> collided_primers_default; // collided_primers using the default encoding
+    vector<Collision> collision_list[4]; // collision_list[i][j]: a set of primer ids of [encoding i, payload j]
 
     int n_primer = 0;
     int n_strand = 0;
     vector<int> selection_list; 
 
 };
-
 #endif
