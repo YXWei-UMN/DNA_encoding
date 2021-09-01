@@ -21,7 +21,7 @@ typedef int CollisionPositionIndex;
 class VarTransform {
 public:
     VarTransform(string path[4]);
-    ~VarTransform() {}
+    ~VarTransform() { delete variable_length; }
 
     void Run();
     void PrintStatistics();
