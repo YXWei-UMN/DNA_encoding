@@ -45,7 +45,7 @@ bool VariableLength::IsBlindSpot(unsigned int distance) {
 }
 
 void VariableLength::ReadCollisions(string path) {
-    cout << "Processing " << path << endl;
+    cout << "VarLen: Processing " << path << endl;
     strand_id2name.clear();
     strand_name2id.clear();
     primer_id2name.clear();
@@ -55,8 +55,6 @@ void VariableLength::ReadCollisions(string path) {
     ifstream myfile;
     myfile.open(path);
     string line;
-
-    const int STRAND_LENGTH = 200;
 
     while(getline(myfile, line)) {
         istringstream iss(line);
@@ -94,7 +92,6 @@ void VariableLength::ReadCollisions(string path) {
         iss >> current_field;
         unsigned int strand_end = stoul(current_field);
         if (strand_start > strand_end) swap(strand_start, strand_end);
-        if (strand_start / STRAND_LENGTH != strand_end / STRAND_LENGTH) continue;
         collision_linear_order.push_back(make_tuple(strand_id, strand_start, strand_end, primer_id));
     }
 
@@ -121,7 +118,7 @@ void VariableLength::ReadCollisions(string path) {
             cut_last = (int)(cut_last * 0.1 + 0.5);
 
             assert(cut_last <= cut);
-            if ((cut_last / STRAND_LENGTH == cut / STRAND_LENGTH) && IsBlindSpot(cut-cut_last)) {
+            if (IsBlindSpot(cut-cut_last)) {
                 if (primer_id_last == primer_id) {
                     discarded_primers.insert(primer_id);
                 } else {
