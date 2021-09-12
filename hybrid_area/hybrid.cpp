@@ -8,7 +8,6 @@
 #include <map>
 #include <algorithm>
 #include <unordered_map>
-#include <map>
 #include <climits>
 
 #include <dirent.h>
@@ -53,7 +52,7 @@ vector<pair<unsigned int, unsigned int>> prev_hybrid_area;
 unsigned int total_len;
 vector<string> all_files[4];
 int strand_length_list[4] = {150,160,190,200}; 
-map<string,int> collided_primers;
+unordered_map<string,int> collided_primers;
 
 
 bool isDir(string dir)
@@ -821,10 +820,16 @@ int main(int argc, char** argv) {
         //     cout<<endl;
         // }
 
-        map<string,int> total_collided_primers=collided_primers;
+
+
+
+
+        // TODO: change map to unordered_map
+
+        unordered_map<string,int> total_collided_primers=collided_primers;
         // check the collided primer before mapping selection
         for (auto i = 0;i<4;i++){
-            map<string,int> sec_temp_collided_primers=collided_primers;
+            unordered_map<string,int> sec_temp_collided_primers=collided_primers;
             for (auto j = 0;j<dense_area_list.size();j++){
                 auto collided_list = dense_area_list[j].mappings[i];
                 for(int k = 0;k<collided_list.size();k++){
@@ -838,10 +843,77 @@ int main(int argc, char** argv) {
         cout<<"total number of collided primer in 4 mappings is: "<<total_collided_primers.size()<<endl;
         cout<<endl;
 
+
         // comment out one of the two mapping selection part
 
-        // old mapping selection
-        map<string,int> temp_collided_primers=collided_primers;
+        // cout<<"Running old mapping algorithm..."<<endl;
+        // cout<<endl;
+
+        // // old mapping selection
+        // unordered_map<string,int> temp_collided_primers=collided_primers;
+        // for (auto i = 0;i<dense_area_list.size();i++){
+        //     bool no_collision = false;
+        //     for (int j = 0;j<4;j++){
+        //         if(dense_area_list[i].mappings[j].size()==0){
+        //             dense_area_list[i].mapping = j;
+        //             no_collision = true;
+        //             break;
+        //         }
+        //     }
+        //     if(no_collision){continue;}
+        //     vector<int> list_of_increased_primer;
+        //     int min = INT_MAX;
+        //     int min_index = 0;
+
+        //     //find the mapping with least increased primer
+        //     for (int j = 0;j<4;j++){
+        //         int increased_primer = 0;
+        //         for (int k = 0;k<dense_area_list[i].mappings[j].size();k++){
+        //             if(temp_collided_primers.find(dense_area_list[i].mappings[j][k].second)==temp_collided_primers.end()){
+        //                 increased_primer += 1;
+        //             }
+        //         }
+        //         list_of_increased_primer.push_back(increased_primer);
+        //         if(increased_primer<min){
+        //             min = increased_primer;
+        //             min_index = j;
+        //         }
+        //         // //used for debug
+        //         // if(i==67){
+        //         //     cout<<"i==61"<<endl;
+        //         //     for (auto k=0;k<list_of_increased_primer.size();k++){
+        //         //         cout<<list_of_increased_primer[k]<<" ";
+        //         //     }
+        //         //     cout<<endl;
+        //         //     cout<<j<<" "<<increased_primer<<" "<<min_index<<endl;
+        //         // }
+        //     }
+
+        //     dense_area_list[i].mapping = min_index;
+        //     for(int k = 0;k<dense_area_list[i].mappings[min_index].size();k++){
+        //         string primer = dense_area_list[i].mappings[min_index][k].second;
+        //         temp_collided_primers[primer]=1;
+        //     }
+        // }
+
+        // cout<<"num of collided primers after mapping (before var-length cut) is: "<<temp_collided_primers.size()<<endl;
+        // cout<<endl;
+
+
+
+        
+        // new mapping selection
+        cout<<"Running new mapping algorithm..."<<endl;
+        cout<<endl;
+
+        vector<pair<string,vector<pair<int,int>>>> temp;
+        // temp-> [string,[(dense_area_id,mapping_id),(did,mid),(did,mid)]]
+
+        // TODO: release the memory of other structures
+
+        // sort the collided_primers based on the num of mappings we should ban
+
+        // collect the information to initialize the data structure of "temp"
         for (auto i = 0;i<dense_area_list.size();i++){
             bool no_collision = false;
             for (int j = 0;j<4;j++){
@@ -852,12 +924,145 @@ int main(int argc, char** argv) {
                 }
             }
             if(no_collision){continue;}
-            vector<int> list_of_increased_primer;
-            int min = INT_MAX;
-            int min_index = 0;
-
-            //find the mapping with least increased primer
             for (int j = 0;j<4;j++){
+                auto collided_list = dense_area_list[i].mappings[j];
+                for (auto k=0;k<collided_list.size();k++){
+                    auto primer = collided_list[k].second;
+                    // if(temp.find(primer)!=temp.end()){// find the primer
+                    //     auto dense_id = temp[primer].back().first;
+                    //     auto mapping_id = temp[primer].back().second;
+                    //     if(dense_id!=i || mapping_id!=j){ //avoid pushing back some content
+                    //         temp[primer].push_back(make_pair(i,j));
+                    //     }
+                    // }
+                    // else{// cannot find the primer
+                    //     vector<pair<int,int>> init;
+                    //     init.push_back(make_pair(i,j));
+                    //     temp[primer] = init;
+                    // }
+
+                    if (temp.size()==0){
+                        vector<pair<int,int>> init;
+                        init.push_back(make_pair(i,j));
+                        temp.push_back(make_pair(primer,init));
+                        continue;
+                    }
+
+                    for (auto l = 0;l<temp.size();l++){
+                        if (temp[l].first==primer){ // find the primer
+                            auto dense_id = temp[l].second.back().first;
+                            auto mapping_id = temp[l].second.back().second;
+                            if(dense_id!=i || mapping_id!=j){ //avoid pushing back some content
+                                temp[l].second.push_back(make_pair(i,j));
+                            }         
+                            break;
+                        }
+                        if (l==temp.size()-1){ // cannot find the primer
+                            vector<pair<int,int>> init;
+                            init.push_back(make_pair(i,j));
+                            temp.push_back(make_pair(primer,init));
+                        }
+                    }
+                }
+            }
+        }
+        
+        stable_sort(temp.begin(),temp.end(),primer_sort);
+
+        // check if the size is ascending 
+        //cout<<"temp.size = "<<temp.size()<<endl;
+        for (auto i=0;i<temp.size()-1;i++){
+            //cout<<i<<" ";
+            assert(temp[i].second.size()<=temp[i+1].second.size());
+        }
+
+        // gradually recover the primers/decide the mapping
+        auto temp_collided_primers = collided_primers;
+        for (auto i=0;i<temp.size();i++){
+            auto primer = temp[i].first;
+            auto temp_dense_area_list = dense_area_list;
+            bool successful_recover = true;
+            if (temp_collided_primers.find(primer)!=temp_collided_primers.end()){
+                // dont need to handle the primer that has been given up
+                continue;
+            }
+
+            auto list_of_dense_area_and_it_mapping = temp[i].second;
+            for (auto j=0;j<list_of_dense_area_and_it_mapping.size();j++){
+                auto dense_area_id = list_of_dense_area_and_it_mapping[j].first;
+                auto mapping_id = list_of_dense_area_and_it_mapping[j].second;
+                
+                if (temp_dense_area_list[dense_area_id].mapping==-1){// haven't decided yet
+                    // ban the corresponding mapping
+                    temp_dense_area_list[dense_area_id].legal[mapping_id]=false;
+
+                    int count_illegal = 0;
+                    int legal_id = 0;
+                    // if three of the mappings are illegal
+                    // then choose the left one
+                    for (int k=0;k<4;k++){
+                        if (temp_dense_area_list[dense_area_id].legal[k]==false){
+                            count_illegal+=1;
+                        }
+                        else{
+                            legal_id = k;
+                        }
+                    }
+                    if (count_illegal >= 3){
+                        temp_dense_area_list[dense_area_id].mapping = legal_id;
+                    }
+
+                }
+                else if (temp_dense_area_list[dense_area_id].mapping==mapping_id){
+                    // mapping has been decided but not equal to the mapping id
+                    // then the recover fails
+
+                    temp_collided_primers[primer] = 1;
+
+                    // move to the next primer candidate and do not save the dense area list
+                    successful_recover = false;
+                    break;
+                }
+                // else the mapping has been decided and equal to the mapping id
+                // then nothing needs to be done       
+
+            }
+
+            // if successful, merge the changes to dense_area_list
+            if (successful_recover){
+                dense_area_list = temp_dense_area_list;
+            }
+        }
+        
+        // check if there exist more than one mapping remaining for some dense area
+        for (auto i=0;i<dense_area_list.size();i++){
+            bool ready = false;
+            if (dense_area_list[i].mapping!=-1){
+                // means the mapping has been set
+                continue;
+            }
+
+            // else select one mapping with less collision after simple cut algorithm
+            // TODO: change the algorithm to select the one with less collided primer increase
+            // using temp_collided_primers
+            vector<int> list_of_increased_primer;
+            auto mappings_list = dense_area_list[i].mappings;
+            //int min_collision_count = INT_MAX;
+            int min = INT_MAX;
+            int min_index = -1;
+            for (auto j=0;j<mappings_list.size();j++){
+                if (dense_area_list[i].legal[j]==false){
+                    list_of_increased_primer.push_back(INT_MAX);
+                    continue;
+                }
+                if(min_index==-1){ // initial min_index as the first legal mapping
+                    min_index=j;
+                }
+                // only search among the legal mapping
+
+
+                // TODO: exempt the collision that would be cut
+                
                 int increased_primer = 0;
                 for (int k = 0;k<dense_area_list[i].mappings[j].size();k++){
                     if(temp_collided_primers.find(dense_area_list[i].mappings[j][k].second)==temp_collided_primers.end()){
@@ -869,17 +1074,24 @@ int main(int argc, char** argv) {
                     min = increased_primer;
                     min_index = j;
                 }
-                // //used for debug
-                // if(i==67){
-                //     cout<<"i==61"<<endl;
-                //     for (auto k=0;k<list_of_increased_primer.size();k++){
-                //         cout<<list_of_increased_primer[k]<<" ";
+                // auto collision_list = mappings_list[j];
+                // int collision_count = 0;
+                // auto left = dense_area_list[i].start;
+                // auto right = dense_area_list[i].end;
+                // for (auto k=0;k<collision_list.size();k++){
+                //     auto collision_pos = collision_list[k].first;
+                //     if (!check_blind_spot(collision_pos-left) && !check_blind_spot(right-collision_pos)){
+                //         left = collision_pos;
                 //     }
-                //     cout<<endl;
-                //     cout<<j<<" "<<increased_primer<<" "<<min_index<<endl;
+                //     else{
+                //         collision_count++;
+                //     }
+                // }
+                // if(collision_count<min_collision_count){
+                //     min_collision_count = collision_count;
+                //     min_index = j;
                 // }
             }
-
             dense_area_list[i].mapping = min_index;
             for(int k = 0;k<dense_area_list[i].mappings[min_index].size();k++){
                 string primer = dense_area_list[i].mappings[min_index][k].second;
@@ -892,183 +1104,10 @@ int main(int argc, char** argv) {
 
 
 
-        
-        // // new mapping selection
-        
-        // vector<pair<string,vector<pair<int,int>>>> temp;
-        // // temp-> [string,[(dense_area_id,mapping_id),(did,mid),(did,mid)]]
-
-        // // TODO: release the memory of other structures
-
-        // // sort the collided_primers based on the num of mappings we should ban
-
-        // // collect the information to initialize the data structure of "temp"
-        // for (auto i = 0;i<dense_area_list.size();i++){
-        //     bool no_collision = false;
-        //     for (int j = 0;j<4;j++){
-        //         if(dense_area_list[i].mappings[j].size()==0){
-        //             dense_area_list[i].mapping = j;
-        //             no_collision = true;
-        //             break;
-        //         }
-        //     }
-        //     if(no_collision){continue;}
-        //     for (int j = 0;j<4;j++){
-        //         auto collided_list = dense_area_list[i].mappings[j];
-        //         for (auto k=0;k<collided_list.size();k++){
-        //             auto primer = collided_list[k].second;
-        //             for (auto l = 0;l<temp.size();l++){
-        //                 if (temp[l].first==primer){ // find the primer
-        //                     auto dense_id = temp[l].second.back().first;
-        //                     auto mapping_id = temp[l].second.back().second;
-        //                     if(dense_id!=i || mapping_id!=j){ //avoid pushing back some content
-        //                         temp[l].second.push_back(make_pair(i,j));
-        //                     }         
-        //                     break;
-        //                 }
-        //                 if (l==temp.size()-1){ // cannot find the primer
-        //                     vector<pair<int,int>> init;
-        //                     init.push_back(make_pair(i,j));
-        //                     temp.push_back(make_pair(primer,init));
-        //                 }
-        //             }
-        //         }
-        //     }
-        // }
-        
-        // stable_sort(temp.begin(),temp.end(),primer_sort);
-
-        // // gradually recover the primers/decide the mapping
-        // auto temp_collided_primers = collided_primers;
-        // for (auto i=0;i<temp.size();i++){
-        //     auto primer = temp[i].first;
-        //     auto temp_dense_area_list = dense_area_list;
-        //     bool successful_recover = true;
-        //     if (temp_collided_primers.find(primer)!=temp_collided_primers.end()){
-        //         // dont need to handle the primer that has been given up
-        //         continue;
-        //     }
-
-        //     auto list_of_dense_area_and_it_mapping = temp[i].second;
-        //     for (auto j=0;j<list_of_dense_area_and_it_mapping.size();j++){
-        //         auto dense_area_id = list_of_dense_area_and_it_mapping[j].first;
-        //         auto mapping_id = list_of_dense_area_and_it_mapping[j].second;
-                
-        //         if (temp_dense_area_list[dense_area_id].mapping==-1){// haven't decided yet
-        //             // ban the corresponding mapping
-        //             temp_dense_area_list[dense_area_id].legal[mapping_id]=false;
-
-        //             int count_illegal = 0;
-        //             int legal_id = 0;
-        //             // if three of the mappings are illegal
-        //             // then choose the left one
-        //             for (int k=0;k<4;k++){
-        //                 if (temp_dense_area_list[dense_area_id].legal[k]==false){
-        //                     count_illegal+=1;
-        //                 }
-        //                 else{
-        //                     legal_id = k;
-        //                 }
-        //             }
-        //             if (count_illegal >= 3){
-        //                 temp_dense_area_list[dense_area_id].mapping = legal_id;
-        //             }
-
-        //         }
-        //         else if (temp_dense_area_list[dense_area_id].mapping!=mapping_id){
-        //             // mapping has been decided but not equal to the mapping id
-        //             // then the recover fails
-
-        //             temp_collided_primers[primer] = 1;
-
-        //             // move to the next primer candidate and do not save the dense area list
-        //             successful_recover = false;
-        //             break;
-        //         }
-        //         // else the mapping has been decided and equal to the mapping id
-        //         // then nothing needs to be done       
-
-        //     }
-
-        //     // if successful, merge the changes to dense_area_list
-        //     if (successful_recover){
-        //         dense_area_list = temp_dense_area_list;
-        //     }
-        // }
-        
-        // // check if there exist more than one mapping remaining for some dense area
-        // for (auto i=0;i<dense_area_list.size();i++){
-        //     bool ready = false;
-        //     if (dense_area_list[i].mapping!=-1){
-        //         // means the mapping has been set
-        //         continue;
-        //     }
-
-        //     // else select one mapping with less collision after simple cut algorithm
-        //     // TODO: change the algorithm to select the one with less collided primer increase
-        //     // using temp_collided_primers
-        //     vector<int> list_of_increased_primer;
-        //     auto mappings_list = dense_area_list[i].mappings;
-        //     //int min_collision_count = INT_MAX;
-        //     int min = INT_MAX;
-        //     int min_index = -1;
-        //     for (auto j=0;j<mappings_list.size();j++){
-        //         if (dense_area_list[i].legal[j]==false){
-        //             list_of_increased_primer.push_back(INT_MAX);
-        //             continue;
-        //         }
-        //         if(min_index==-1){ // initial min_index as the first legal mapping
-        //             min_index=j;
-        //         }
-        //         // only search among the legal mapping
-
-
-        //         // TODO: exempt the collision that would be cut
-                
-        //         int increased_primer = 0;
-        //         for (int k = 0;k<dense_area_list[i].mappings[j].size();k++){
-        //             if(temp_collided_primers.find(dense_area_list[i].mappings[j][k].second)==temp_collided_primers.end()){
-        //                 increased_primer += 1;
-        //             }
-        //         }
-        //         list_of_increased_primer.push_back(increased_primer);
-        //         if(increased_primer<min){
-        //             min = increased_primer;
-        //             min_index = j;
-        //         }
-        //         // auto collision_list = mappings_list[j];
-        //         // int collision_count = 0;
-        //         // auto left = dense_area_list[i].start;
-        //         // auto right = dense_area_list[i].end;
-        //         // for (auto k=0;k<collision_list.size();k++){
-        //         //     auto collision_pos = collision_list[k].first;
-        //         //     if (!check_blind_spot(collision_pos-left) && !check_blind_spot(right-collision_pos)){
-        //         //         left = collision_pos;
-        //         //     }
-        //         //     else{
-        //         //         collision_count++;
-        //         //     }
-        //         // }
-        //         // if(collision_count<min_collision_count){
-        //         //     min_collision_count = collision_count;
-        //         //     min_index = j;
-        //         // }
-        //     }
-        //     dense_area_list[i].mapping = min_index;
-        //     for(int k = 0;k<dense_area_list[i].mappings[min_index].size();k++){
-        //         string primer = dense_area_list[i].mappings[min_index][k].second;
-        //         temp_collided_primers[primer]=1;
-        //     }
-        // }
-
-
-
-
-
 
 
         // check num of collided primers after mapping (before var-length cut)
-        map<string,int> third_temp_collided_primers=collided_primers;
+        unordered_map<string,int> third_temp_collided_primers=collided_primers;
         for (auto j = 0;j<dense_area_list.size();j++){
             auto mapping_id = dense_area_list[j].mapping;
             auto collided_list = dense_area_list[j].mappings[mapping_id];
