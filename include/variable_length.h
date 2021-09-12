@@ -8,6 +8,7 @@
 #include<unordered_map>
 #include<unordered_set>
 #include<tuple>
+#include "tool.h"
 
 using namespace std;
 
@@ -20,11 +21,6 @@ using namespace std;
 // 5. n_strand only count the strand that appears in the blast result(i.e., strands with collisions)
 // 6. If a collision is at [start, end], we cut it at the nearest "multiple of 10 position" with (start+end)/2, i.e., round((start+end)/2)*0.1)*10
 
-typedef unsigned int PrimerID;
-typedef unsigned int StrandID;
-typedef tuple<StrandID, unsigned int, unsigned int, PrimerID> Collision;
-typedef int CollisionPositionIndex;
-
 class VariableLength {
 public:
     VariableLength(string path);
@@ -32,6 +28,8 @@ public:
 
     void Cut();
     void PrintStatistics();
+    unordered_set<PrimerID> get_recovered_primers() const{ return recovered_primers;}
+    unordered_set<PrimerID> get_discarded_primers() const{ return discarded_primers;}
 
 private:
     vector<bool> blind_spot;
@@ -49,7 +47,7 @@ private:
     unordered_map<string, PrimerID> primer_name2id;
     vector<Collision> collision_linear_order;
 
-    set<string> all_primers; // all primer names(w/o collisions)
+    unordered_set<string> all_primers; // all primer names(w/o collisions)
     unordered_map<PrimerID, unordered_set<PrimerID> > primer_confilct_list; // conflict between primers (primers that cannot exist together)
     vector<pair<int, PrimerID>> primer_process_order;
     unordered_set<PrimerID> discarded_primers;

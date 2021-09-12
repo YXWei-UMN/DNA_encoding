@@ -28,13 +28,12 @@ public:
     void Select(); // the main function of this class; select an encoding for each payload
     void PrintStatistics();
 private:
-    void ReadCollisions(string path[4]); // read the blas collision result for four encodings
+    void ReadCollisions(string path[4], string strand_id_prefix); // read the blas collision result for four encodings
     vector<string> all_files[4];
 
-    unordered_map<unsigned int, string> strand_id2name;
-    unordered_map<string, unsigned int> strand_name2id;
     unordered_map<unsigned int, string> primer_id2name;
     unordered_map<string, unsigned int> primer_name2id;
+    unordered_set<string> strands;
 
     set<string> all_primers; // all primer names(w/o collisions)
 
