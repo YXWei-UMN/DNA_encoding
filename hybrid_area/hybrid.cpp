@@ -22,6 +22,9 @@ using namespace std;
 
 class dense_area{
 public:
+    dense_area(){
+        mapping = -1;
+    }
     dense_area(unsigned int s, unsigned int e){
         start = s;
         end = e;
@@ -49,10 +52,14 @@ vector<bool> blind_spot;
 vector<pair<pair<unsigned int, unsigned int>,string>> collision_list;
 vector<pair<unsigned int, unsigned int>> hybrid_area;
 vector<pair<unsigned int, unsigned int>> prev_hybrid_area;
-unsigned int total_len;
+unsigned int total_len = 0;
 vector<string> all_files[4];
 int strand_length_list[4] = {150,160,190,200}; 
 unordered_map<string,int> collided_primers;
+vector<unordered_map<string,int>> collided_primers_mapping;
+
+string output_file_name = "collided_primers_hybrid_sol.txt";
+string output_file_mapping[4] = {"collided_primers_with_mapping_0.txt","collided_primers_with_mapping_1.txt","collided_primers_with_mapping_2.txt","collided_primers_with_mapping_3.txt"};
 
 
 bool isDir(string dir)
@@ -770,6 +777,38 @@ int main(int argc, char** argv) {
     }
 
 
+    // read collided primers from a txt file
+    string line;
+    ifstream myfile (output_file_name);
+    if (myfile.is_open()){
+        while ( getline (myfile,line) ){
+            if (line!=""){
+                collided_primers[line] = 1;
+            }
+            
+        }
+        myfile.close();
+    }
+
+    for (int i=0;i<4;i++){
+        unordered_map<string,int> init;
+    
+        string line;
+        ifstream myfile (output_file_mapping[i]);
+        if (myfile.is_open()){
+            while ( getline (myfile,line) ){
+                if (line!=""){
+                    init[line] = 1;
+                }
+            }
+            myfile.close();
+        }
+        collided_primers_mapping.push_back(init);
+    }
+
+
+
+
     for (int n = 0; n<all_files[0].size();n++){
         cout<<all_files[0][n]<<endl;
         init_blind_spot();
@@ -822,29 +861,32 @@ int main(int argc, char** argv) {
 
 
 
-
+        // compare with four baselines which only selection one particular mapping
 
         // TODO: change map to unordered_map
 
-        unordered_map<string,int> total_collided_primers=collided_primers;
+        //unordered_map<string,int> total_collided_primers=collided_primers;
         // check the collided primer before mapping selection
         for (auto i = 0;i<4;i++){
-            unordered_map<string,int> sec_temp_collided_primers=collided_primers;
+            //unordered_map<string,int> sec_temp_collided_primers=collided_primers_mapping[i];
             for (auto j = 0;j<dense_area_list.size();j++){
                 auto collided_list = dense_area_list[j].mappings[i];
                 for(int k = 0;k<collided_list.size();k++){
                     auto primer = collided_list[k].second;
-                    sec_temp_collided_primers[primer] = 1;
-                    total_collided_primers[primer] = 1;
+                    collided_primers_mapping[i][primer] = 1;
+                    //total_collided_primers[primer] = 1;
                 }
             }
-            cout<<"for mapping "<<i<<", original num of collided primers is: "<<sec_temp_collided_primers.size()<<endl;
+            cout<<"for mapping "<<i<<", original num of collided primers is: "<<collided_primers_mapping[i].size()<<endl;
         }
-        cout<<"total number of collided primer in 4 mappings is: "<<total_collided_primers.size()<<endl;
+        //cout<<"total number of collided primer in 4 mappings is: "<<total_collided_primers.size()<<endl;
         cout<<endl;
 
 
-        // comment out one of the two mapping selection part
+
+
+
+        // // comment out one of the two mapping selection part
 
         // cout<<"Running old mapping algorithm..."<<endl;
         // cout<<endl;
@@ -896,6 +938,13 @@ int main(int argc, char** argv) {
         //     }
         // }
 
+
+        // cout<<"collided primers: "<<endl;
+        // for (auto it = temp_collided_primers.begin();it!=temp_collided_primers.end();it++){
+        //     cout<<it->first<<endl;
+        // } 
+        // cout<<endl;
+
         // cout<<"num of collided primers after mapping (before var-length cut) is: "<<temp_collided_primers.size()<<endl;
         // cout<<endl;
 
@@ -907,6 +956,7 @@ int main(int argc, char** argv) {
         cout<<endl;
 
         vector<pair<string,vector<pair<int,int>>>> temp;
+        unordered_map<string,int> primer_to_temp_index;
         // temp-> [string,[(dense_area_id,mapping_id),(did,mid),(did,mid)]]
 
         // TODO: release the memory of other structures
@@ -914,6 +964,8 @@ int main(int argc, char** argv) {
         // sort the collided_primers based on the num of mappings we should ban
 
         // collect the information to initialize the data structure of "temp"
+
+
         for (auto i = 0;i<dense_area_list.size();i++){
             bool no_collision = false;
             for (int j = 0;j<4;j++){
@@ -941,28 +993,47 @@ int main(int argc, char** argv) {
                     //     temp[primer] = init;
                     // }
 
-                    if (temp.size()==0){
+                    // if (temp.size()==0){
+                    //     vector<pair<int,int>> init;
+                    //     init.push_back(make_pair(i,j));
+                    //     temp.push_back(make_pair(primer,init));
+                    //     primer_to_temp_index[primer] = temp.size()-1;
+                    //     continue;
+                    // }
+
+                    if(primer_to_temp_index.find(primer)!=primer_to_temp_index.end()){// find the primer
+                        auto temp_index = primer_to_temp_index[primer];
+                        auto dense_id = temp[temp_index].second.back().first;
+                        auto mapping_id = temp[temp_index].second.back().second;
+                        if(dense_id!=i || mapping_id!=j){ //avoid pushing back some content
+                            temp[temp_index].second.push_back(make_pair(i,j));
+                        }
+
+                    }
+                    else{// cannot find the primer
                         vector<pair<int,int>> init;
                         init.push_back(make_pair(i,j));
                         temp.push_back(make_pair(primer,init));
-                        continue;
+                        primer_to_temp_index[primer] = temp.size()-1;
                     }
 
-                    for (auto l = 0;l<temp.size();l++){
-                        if (temp[l].first==primer){ // find the primer
-                            auto dense_id = temp[l].second.back().first;
-                            auto mapping_id = temp[l].second.back().second;
-                            if(dense_id!=i || mapping_id!=j){ //avoid pushing back some content
-                                temp[l].second.push_back(make_pair(i,j));
-                            }         
-                            break;
-                        }
-                        if (l==temp.size()-1){ // cannot find the primer
-                            vector<pair<int,int>> init;
-                            init.push_back(make_pair(i,j));
-                            temp.push_back(make_pair(primer,init));
-                        }
-                    }
+                    // for (auto l = 0;l<temp.size();l++){
+                    //     if (temp[l].first==primer){ // find the primer
+                    //         auto dense_id = temp[l].second.back().first;
+                    //         auto mapping_id = temp[l].second.back().second;
+                    //         if(dense_id!=i || mapping_id!=j){ //avoid pushing back some content
+                    //             temp[l].second.push_back(make_pair(i,j));
+                    //         }         
+                    //         break;
+                    //     }
+                    //     if (l==(temp.size()-1)){ // cannot find the primer
+                    //         vector<pair<int,int>> init;
+                    //         init.push_back(make_pair(i,j));
+                    //         temp.push_back(make_pair(primer,init));
+                    //         primer_to_temp_index[primer] = temp.size()-1;
+                    //         break;
+                    //     }
+                    // }
                 }
             }
         }
@@ -970,38 +1041,55 @@ int main(int argc, char** argv) {
         stable_sort(temp.begin(),temp.end(),primer_sort);
 
         // check if the size is ascending 
-        //cout<<"temp.size = "<<temp.size()<<endl;
+        cout<<"temp.size = "<<temp.size()<<endl;
         for (auto i=0;i<temp.size()-1;i++){
             //cout<<i<<" ";
             assert(temp[i].second.size()<=temp[i+1].second.size());
         }
-
+        //cout<<"check"<<endl;
         // gradually recover the primers/decide the mapping
-        auto temp_collided_primers = collided_primers;
+
+
+        unordered_map<string,int> delta_collided_primers;
+        //auto temp_collided_primers = collided_primers;
+        //cout<<"check1"<<endl;
         for (auto i=0;i<temp.size();i++){
             auto primer = temp[i].first;
-            auto temp_dense_area_list = dense_area_list;
+            //cout<<"check2"<<endl;
+            unordered_map<int,dense_area> delta_dense_area_list; // did -> modified_dense_area
+            //auto temp_dense_area_list = dense_area_list;
+            //cout<<"check3"<<endl;
             bool successful_recover = true;
-            if (temp_collided_primers.find(primer)!=temp_collided_primers.end()){
+            if (collided_primers.find(primer)!=collided_primers.end() || delta_collided_primers.find(primer)!=delta_collided_primers.end()){
                 // dont need to handle the primer that has been given up
+                //cout<<"skip "<<i<<" ";
                 continue;
             }
-
+            //cout<<i<<" ";
             auto list_of_dense_area_and_it_mapping = temp[i].second;
             for (auto j=0;j<list_of_dense_area_and_it_mapping.size();j++){
                 auto dense_area_id = list_of_dense_area_and_it_mapping[j].first;
                 auto mapping_id = list_of_dense_area_and_it_mapping[j].second;
-                
-                if (temp_dense_area_list[dense_area_id].mapping==-1){// haven't decided yet
+
+                // first check if this dense_area is already in delta
+                dense_area temp_dense_area;
+                if(delta_dense_area_list.find(dense_area_id)==delta_dense_area_list.end()){ // not in delta
+                    temp_dense_area = dense_area_list[dense_area_id];
+                }
+                else { // already in delta
+                    temp_dense_area = delta_dense_area_list[dense_area_id];
+                }
+
+                if (temp_dense_area.mapping==-1){// haven't decided yet
                     // ban the corresponding mapping
-                    temp_dense_area_list[dense_area_id].legal[mapping_id]=false;
+                    temp_dense_area.legal[mapping_id] = false;
 
                     int count_illegal = 0;
                     int legal_id = 0;
                     // if three of the mappings are illegal
                     // then choose the left one
                     for (int k=0;k<4;k++){
-                        if (temp_dense_area_list[dense_area_id].legal[k]==false){
+                        if (temp_dense_area.legal[k]==false){
                             count_illegal+=1;
                         }
                         else{
@@ -1009,31 +1097,41 @@ int main(int argc, char** argv) {
                         }
                     }
                     if (count_illegal >= 3){
-                        temp_dense_area_list[dense_area_id].mapping = legal_id;
+                        temp_dense_area.mapping = legal_id;
                     }
 
                 }
-                else if (temp_dense_area_list[dense_area_id].mapping==mapping_id){
-                    // mapping has been decided but not equal to the mapping id
+                else if (temp_dense_area.mapping==mapping_id){
+                    // mapping has been decided and is equal to the mapping id
                     // then the recover fails
-
-                    temp_collided_primers[primer] = 1;
+                    
+                    delta_collided_primers[primer] = 1;
+                    //temp_collided_primers[primer] = 1;
 
                     // move to the next primer candidate and do not save the dense area list
                     successful_recover = false;
                     break;
                 }
-                // else the mapping has been decided and equal to the mapping id
-                // then nothing needs to be done       
+                // else the mapping has been decided but is not the mapping id
+                // then nothing needs to be done   
+
+
+                // update the delta dense_area
+                delta_dense_area_list[dense_area_id] = temp_dense_area;    
 
             }
 
             // if successful, merge the changes to dense_area_list
             if (successful_recover){
-                dense_area_list = temp_dense_area_list;
+                for (auto it = delta_dense_area_list.begin();it!=delta_dense_area_list.end();it++){
+                    auto did = it->first;
+                    dense_area_list[did] = it->second;
+                }
             }
         }
         
+        //cout<<"break point"<<endl;
+
         // check if there exist more than one mapping remaining for some dense area
         for (auto i=0;i<dense_area_list.size();i++){
             bool ready = false;
@@ -1044,7 +1142,7 @@ int main(int argc, char** argv) {
 
             // else select one mapping with less collision after simple cut algorithm
             // TODO: change the algorithm to select the one with less collided primer increase
-            // using temp_collided_primers
+
             vector<int> list_of_increased_primer;
             auto mappings_list = dense_area_list[i].mappings;
             //int min_collision_count = INT_MAX;
@@ -1065,7 +1163,8 @@ int main(int argc, char** argv) {
                 
                 int increased_primer = 0;
                 for (int k = 0;k<dense_area_list[i].mappings[j].size();k++){
-                    if(temp_collided_primers.find(dense_area_list[i].mappings[j][k].second)==temp_collided_primers.end()){
+                    auto primer = dense_area_list[i].mappings[j][k].second;
+                    if(collided_primers.find(primer)==collided_primers.end() && delta_collided_primers.find(primer)==delta_collided_primers.end()){
                         increased_primer += 1;
                     }
                 }
@@ -1095,18 +1194,12 @@ int main(int argc, char** argv) {
             dense_area_list[i].mapping = min_index;
             for(int k = 0;k<dense_area_list[i].mappings[min_index].size();k++){
                 string primer = dense_area_list[i].mappings[min_index][k].second;
-                temp_collided_primers[primer]=1;
+                delta_collided_primers[primer]=1;
             }
         }
 
-        cout<<"num of collided primers after mapping (before var-length cut) is: "<<temp_collided_primers.size()<<endl;
-        cout<<endl;
 
-
-
-
-
-        // check num of collided primers after mapping (before var-length cut)
+        // check num of collided primers using the decided mapping (before var-length cut)
         unordered_map<string,int> third_temp_collided_primers=collided_primers;
         for (auto j = 0;j<dense_area_list.size();j++){
             auto mapping_id = dense_area_list[j].mapping;
@@ -1310,7 +1403,33 @@ int main(int argc, char** argv) {
     }
 
 
+    // write collided primers to a txt file
+    ofstream output;
+    output.open(output_file_name);
+    if(output.is_open()){
+        for (auto it = collided_primers.begin();it!=collided_primers.end();it++){
+            output<<it->first<<endl;
+        }
+        output.close();
+    }
+    else{
+        cout<<"unable to write to file"<<endl;
+    }
 
+
+    for (int i=0;i<4;i++){
+        ofstream output;
+        output.open(output_file_mapping[i]);
+        if(output.is_open()){
+            for (auto it = collided_primers_mapping[i].begin();it!=collided_primers_mapping[i].end();it++){
+                output<<it->first<<endl;
+            }
+            output.close();
+        }
+        else{
+            cout<<"unable to write to file"<<endl;
+        }
+    }
 
 
 
