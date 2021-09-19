@@ -152,9 +152,7 @@ void VariableLength::dropout_ReadCollisions(string path) {
 
     srand (time(NULL));
     while(getline(myfile, line)) {
-        if(rand() % 5==0){
-            continue; // dedup ratio 5:1
-        }
+
 
         istringstream iss(line);
         string current_field;
@@ -165,6 +163,12 @@ void VariableLength::dropout_ReadCollisions(string path) {
             iss >> current_field;
             if (current_field == "Query:") {
                 iss >> current_field;
+                if (all_primers.find(current_field)!=all_primers.end()){
+                    // if this primer has at least one collision recorded, start to dropout
+                    if(rand() % 5==0){
+                        continue; // dedup ratio 5:1
+                    }
+                }
                 all_primers.insert(current_field);
             }
             continue;
