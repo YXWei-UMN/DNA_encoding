@@ -158,17 +158,12 @@ void VariableLength::dropout_ReadCollisions(string path) {
         string current_field;
         // line example:
         // primer4	payload1176045	93.750	16	1	0	1	16	55	40	27	25.6
+
         if (line[0] == '#') {
             iss >> current_field;
             iss >> current_field;
             if (current_field == "Query:") {
                 iss >> current_field;
-                if (all_primers.find(current_field)!=all_primers.end()){
-                    // if this primer has at least one collision recorded, start to dropout
-                    if(rand() % 5==0){
-                        continue; // dedup ratio 5:1
-                    }
-                }
                 all_primers.insert(current_field);
             }
             continue;
@@ -185,6 +180,12 @@ void VariableLength::dropout_ReadCollisions(string path) {
         primer_name2id[primer_name] = primer_id;
         strand_id2name[strand_id] = strand_name;
         strand_name2id[strand_name] = strand_id;
+
+
+        if(rand() % 5!=0){
+            continue; // dedup ratio 5:1
+        }
+
 
         // read collsion position
         for (int i = 0; i < 6; i++) {
