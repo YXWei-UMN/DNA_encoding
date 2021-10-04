@@ -38,6 +38,10 @@ void VarTransform::Run() {
         string path[4] = {all_files[0][file_id], all_files[1][file_id], all_files[2][file_id], all_files[3][file_id]};
 
         for (int i = 0; i < 4; i++) {
+            collision_list[i].clear();
+        }
+
+        for (int i = 0; i < 4; i++) {
             string &cur_path = path[i];
 
             ifstream myfile;
