@@ -7,10 +7,11 @@
 #include <climits>
 #include <sstream>
 #include <algorithm>
-
+#include "global.h"
 #include "variable_length.h"
 #include "tool.h"
-
+#include <stdlib.h>     /* srand, rand */
+#include <time.h>
 using namespace std;
 
 
@@ -57,6 +58,7 @@ void VariableLength::ReadCollisions(string path) {
     string line;
 
     while(getline(myfile, line)) {
+
         istringstream iss(line);
         string current_field;
         // line example:
@@ -136,11 +138,123 @@ void VariableLength::ReadCollisions(string path) {
     n_primer = all_primers.size();
 }
 
+void VariableLength::dropout_ReadCollisions(string path) {
+    cout << "VarLen: Processing " << path << endl;
+    strand_id2name.clear();
+    strand_name2id.clear();
+    primer_id2name.clear();
+    primer_name2id.clear();
+    collision_linear_order.clear();
+
+    ifstream myfile;
+    myfile.open(path);
+    string line;
+
+    srand (time(NULL));
+    while(getline(myfile, line)) {
+
+
+        istringstream iss(line);
+        string current_field;
+        // line example:
+        // primer4	payload1176045	93.750	16	1	0	1	16	55	40	27	25.6
+
+        if (line[0] == '#') {
+            iss >> current_field;
+            iss >> current_field;
+            if (current_field == "Query:") {
+                iss >> current_field;
+                all_primers.insert(current_field);
+            }
+            continue;
+        }
+
+        string primer_name;
+        string strand_name;
+        PrimerID primer_id;
+        StrandID strand_id;
+        iss >> primer_name >> strand_name;
+        primer_id = stoul(primer_name.substr(6));
+        strand_id = stoul(strand_name.substr(7));
+        primer_id2name[primer_id] = primer_name;
+        primer_name2id[primer_name] = primer_id;
+        strand_id2name[strand_id] = strand_name;
+        strand_name2id[strand_name] = strand_id;
+
+
+        if(rand() % 5!=0){
+            continue; // dedup ratio 5:1
+        }
+
+
+        // read collsion position
+        for (int i = 0; i < 6; i++) {
+            iss >> current_field;
+        }
+        iss >> current_field;
+        unsigned int strand_start = stoul(current_field);
+        iss >> current_field;
+        unsigned int strand_end = stoul(current_field);
+        if (strand_start > strand_end) swap(strand_start, strand_end);
+        collision_linear_order.push_back(make_tuple(strand_id, strand_start, strand_end, primer_id));
+    }
+
+    sort(collision_linear_order.begin(), collision_linear_order.end(), CollisionPositionCMP);
+
+    for (int i = 1; i < collision_linear_order.size(); i++) {
+        auto &cur_collision = collision_linear_order[i];
+        StrandID strand_id = get<0>(cur_collision);
+        unsigned int start = get<1>(cur_collision);
+        unsigned int end = get<2>(cur_collision);
+        PrimerID primer_id = get<3>(cur_collision);
+
+        unsigned int cut = start + (end - start) / 2;
+        cut = (int)(cut * 0.1 + 0.5);
+
+        auto &last_collision = collision_linear_order[i-1];
+        StrandID strand_id_last = get<0>(last_collision);
+        if (strand_id_last == strand_id) {
+            unsigned int start_last = get<1>(last_collision);
+            unsigned int end_last = get<2>(last_collision);
+            PrimerID primer_id_last = get<3>(last_collision);
+
+            unsigned int cut_last = start_last + (end_last - start_last)/2;
+            cut_last = (int)(cut_last * 0.1 + 0.5);
+
+            assert(cut_last <= cut);
+            if (IsBlindSpot(cut-cut_last)) {
+                if (primer_id_last == primer_id) {
+                    discarded_primers.insert(primer_id);
+                } else {
+                    primer_confilct_list[primer_id].insert(primer_id_last);
+                    primer_confilct_list[primer_id_last].insert(primer_id);
+                }
+            }
+
+        }
+    }
+
+    assert(strand_id2name.size() == strand_name2id.size());
+    assert(primer_id2name.size() == primer_name2id.size());
+    n_strand += strand_id2name.size();
+    n_primer = all_primers.size();
+}
+
 
 void VariableLength::Cut() {
-    for (int i = 0; i < all_files.size(); i++) {
-        ReadCollisions(all_files[i]);
+    // whether dropout
+    if (g_dedup==1){
+        for (int i = 0; i < all_files.size(); i++) {
+            dropout_ReadCollisions(all_files[i]);
+        }
     }
+
+    if (g_dedup==0){
+        for (int i = 0; i < all_files.size(); i++) {
+            ReadCollisions(all_files[i]);
+        }
+    }
+
 
     for (auto it = primer_confilct_list.begin(); it != primer_confilct_list.end(); it++) {
         primer_process_order.push_back(make_pair(it->second.size(), it->first));
