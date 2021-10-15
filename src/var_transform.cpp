@@ -5,6 +5,7 @@
 #include <utility>
 #include <climits>
 #include <algorithm>
+#include <cstdio>
 
 #include "var_transform.h"
 #include "tool.h"
@@ -139,6 +140,10 @@ void VarTransform::Run() {
                         } else {
                             break;
                         }
+                        // if (times == 1) {
+                        //     printf("i=%d, pointer[i]=%d,  collision_list[i].size()=%d\n", i, pointer[i], collision_list[i].size());
+                        //     printf("cut=%d, cur_strand_cut=%d\n", cut, cur_strand_cut);
+                        // }
                     }
                 }
 
@@ -153,6 +158,8 @@ void VarTransform::Run() {
                 for(auto it = primers.begin(); it != primers.end(); ++it) {
                     discarded_primers.insert(*it);
                 }
+
+                cur_strand_default_collsions.clear();
             } else {
                 cur_strand_cut = get_collisiton_cut_point(cur_collision);
                 cur_strand_default_collsions.push_back(cur_collision);
@@ -163,6 +170,7 @@ void VarTransform::Run() {
 
     }
 
+            cout << "cur_strand_default_collsions.clear();" << endl;
     n_primer = all_primers.size();
 }
 
