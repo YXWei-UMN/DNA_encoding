@@ -140,10 +140,6 @@ void VarTransform::Run() {
                         } else {
                             break;
                         }
-                        // if (times == 1) {
-                        //     printf("i=%d, pointer[i]=%d,  collision_list[i].size()=%d\n", i, pointer[i], collision_list[i].size());
-                        //     printf("cut=%d, cur_strand_cut=%d\n", cut, cur_strand_cut);
-                        // }
                     }
                 }
 
@@ -168,10 +164,11 @@ void VarTransform::Run() {
             pointer[0]++;
         }
 
+        n_primer = all_primers.size();
+        PrintStatistics();
     }
 
-            cout << "cur_strand_default_collsions.clear();" << endl;
-    n_primer = all_primers.size();
+
 }
 
 
@@ -181,4 +178,5 @@ void VarTransform::PrintStatistics() {
     cout << "Default encoding: n_available_primer =\t" << n_available_primer  << "\tratio = " << (double)n_available_primer/n_primer*100 << "%" << endl << flush;
     n_available_primer = n_primer - discarded_primers.size();
     cout << "After selection: n_available_primer =\t" << n_available_primer << "\tratio = " << (double)n_available_primer/n_primer*100 << "%" << endl << flush;
+    cout << "discarded_primers.size() = " << discarded_primers.size() << endl << flush;
 }
