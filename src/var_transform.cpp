@@ -5,6 +5,7 @@
 #include <utility>
 #include <climits>
 #include <algorithm>
+#include <cstdio>
 
 #include "var_transform.h"
 #include "tool.h"
@@ -36,6 +37,10 @@ void VarTransform::Run() {
     for (int file_id = 0; file_id < all_files[0].size(); file_id++){
         cout << "Selecting tranformation in file " << all_files[0][file_id] << endl;
         string path[4] = {all_files[0][file_id], all_files[1][file_id], all_files[2][file_id], all_files[3][file_id]};
+
+        for (int i = 0; i < 4; i++) {
+            collision_list[i].clear();
+        }
 
         for (int i = 0; i < 4; i++) {
             string &cur_path = path[i];
@@ -135,6 +140,10 @@ void VarTransform::Run() {
                         } else {
                             break;
                         }
+                        // if (times == 1) {
+                        //     printf("i=%d, pointer[i]=%d,  collision_list[i].size()=%d\n", i, pointer[i], collision_list[i].size());
+                        //     printf("cut=%d, cur_strand_cut=%d\n", cut, cur_strand_cut);
+                        // }
                     }
                 }
 
@@ -149,6 +158,8 @@ void VarTransform::Run() {
                 for(auto it = primers.begin(); it != primers.end(); ++it) {
                     discarded_primers.insert(*it);
                 }
+
+                cur_strand_default_collsions.clear();
             } else {
                 cur_strand_cut = get_collisiton_cut_point(cur_collision);
                 cur_strand_default_collsions.push_back(cur_collision);
@@ -159,6 +170,7 @@ void VarTransform::Run() {
 
     }
 
+            cout << "cur_strand_default_collsions.clear();" << endl;
     n_primer = all_primers.size();
 }
 

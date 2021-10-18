@@ -1,4 +1,12 @@
 #include <iostream>
+#include <fstream>
+#include <cassert>
+#include <cstdlib>
+#include <cmath>
+#include <climits>
+#include <set>
+#include <ctime>
+
 #include "include/global.h"
 #include "include/DNA_encoder.h"
 #include "rs.hpp"
@@ -8,6 +16,11 @@
 #define ECC_LENGTH 8
 
 int main(int argc, char** argv) {
+    srand(time(NULL));
+    clock_t time_s0, time_t0;
+    time_s0 = clock();
+
+
     ios::sync_with_stdio(0); cin.tie(0); cout.tie(0);
     /*if (argc != 2) {
         cerr << "argc must be 2" << endl;
@@ -49,7 +62,9 @@ int main(int argc, char** argv) {
         var_transform.PrintStatistics();
     }
 
-
+    time_t0 = clock();
+    double test_time = (double)(time_t0 - time_s0) / CLOCKS_PER_SEC / 60.0;
+    cout << "Time: " << test_time << "min" << endl;
 
     return 0;
 }
