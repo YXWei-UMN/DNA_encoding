@@ -5,6 +5,7 @@
 #include <utility>
 #include <climits>
 #include <algorithm>
+#include <cstdio>
 
 #include "var_transform.h"
 #include "tool.h"
@@ -30,12 +31,17 @@ VarTransform::VarTransform(string path[4]) {
 void VarTransform::Run() {
     variable_length->Cut();
     unordered_set<PrimerID> recovered_primers = variable_length->get_recovered_primers();
-    unordered_set<PrimerID> discarded_primers = variable_length->get_discarded_primers();
-    
+    discarded_primers = variable_length->get_discarded_primers();
+
     const int STRAND_LENGTH = 200;
     for (int file_id = 0; file_id < all_files[0].size(); file_id++){
         cout << "Selecting tranformation in file " << all_files[0][file_id] << endl;
+
         string path[4] = {all_files[0][file_id], all_files[1][file_id], all_files[2][file_id], all_files[3][file_id]};
+
+        for (int i = 0; i < 4; i++) {
+            collision_list[i].clear();
+        }
 
         for (int i = 0; i < 4; i++) {
             string &cur_path = path[i];
@@ -103,7 +109,6 @@ void VarTransform::Run() {
         while(pointer[0] < collision_list[0].size()) {
             Collision &cur_collision = collision_list[0][pointer[0]];
             bool flag_new_strand = false;
-
             if (cur_strand_default_collsions.size() != 0) {
                 int primer_id_cur = get<3>(cur_collision);
                 if (recovered_primers.find(primer_id_cur) != recovered_primers.end()) {
@@ -149,6 +154,8 @@ void VarTransform::Run() {
                 for(auto it = primers.begin(); it != primers.end(); ++it) {
                     discarded_primers.insert(*it);
                 }
+
+                cur_strand_default_collsions.clear();
             } else {
                 cur_strand_cut = get_collisiton_cut_point(cur_collision);
                 cur_strand_default_collsions.push_back(cur_collision);
@@ -156,10 +163,10 @@ void VarTransform::Run() {
 
             pointer[0]++;
         }
-
+        n_primer = all_primers.size();
+        cout << "====" << "File[" << file_id << "]===" << endl;
+        PrintStatistics();
     }
-
-    n_primer = all_primers.size();
 }
 
 

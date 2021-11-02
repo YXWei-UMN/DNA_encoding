@@ -21,6 +21,7 @@ bool g_if_pre_stranding;
 bool g_if_ECC;
 int g_encoding_scheme;
 int g_swap_granularity;
+int g_dedup;
 int Parse(string cfgfile){
     ifstream filestream(cfgfile, ios_base::in);
     if (filestream.fail()) {
@@ -71,6 +72,9 @@ int Parse(string cfgfile){
                 break;
             case hash_("encoding_scheme"):
                 g_encoding_scheme = stoi(value);
+                break;
+            case hash_("dedup"):
+                g_dedup = stoi(value);
                 break;
             case hash_("program"):
                 g_program = stoi(value);

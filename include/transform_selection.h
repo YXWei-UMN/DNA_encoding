@@ -28,7 +28,7 @@ public:
     void Select(); // the main function of this class; select an encoding for each payload
     void PrintStatistics();
 private:
-    void ReadCollisions(string path[4], string strand_id_prefix); // read the blas collision result for four encodings
+    void ReadCollisions(string path[4], string strand_id_prefix); // read the blast collision result for four encodings
     vector<string> all_files[4];
 
     unordered_map<unsigned int, string> primer_id2name;
