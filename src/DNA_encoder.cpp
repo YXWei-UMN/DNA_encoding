@@ -10,7 +10,55 @@
 #include <cstring>
 #include <cassert>
 
-//TODO other three code
+
+
+string DNA_encoder::Church_encoding(string digital_data) {
+    string result;
+    string last_three="ATC";
+    string at[2]={"A","T"};
+    string cg[2]={"C","G"};
+    for (std::size_t i = 0; i < digital_data.size(); i++)
+    {
+        //cover from binary to decimal
+        bitset<8> bits(digital_data.c_str()[i]);
+        for (int j = 0; j < 8; j++) {
+            if (bits[j]==0){
+                if (last_three[0]=='A' && last_three[1]=='A' && last_three[2]=='A'){
+                    result+="T";
+                    last_three.erase(0,1);
+                    last_three+="T";
+                } else if(last_three[0]=='T' && last_three[1]=='T' && last_three[2]=='T'){
+                    result+="A";
+                    last_three.erase(0,1);
+                    last_three+="A";
+                } else{
+                    string str = at[rand()%2];
+                    last_three.erase(0,1);
+                    last_three+=str;
+                    result+=str;
+                }
+            }
+            else if (bits[j]==1){
+                if (last_three[0]=='C' && last_three[1]=='C' && last_three[2]=='C'){
+                    result+="G";
+                    last_three.erase(0,1);
+                    last_three+="G";
+                } else if(last_three[0]=='G' && last_three[1]=='G' && last_three[2]=='G'){
+                    result+="C";
+                    last_three.erase(0,1);
+                    last_three+="C";
+                } else{
+                    string str = cg[rand()%2];
+                    last_three.erase(0,1);
+                    last_three+=str;
+                    result+=str;
+                }
+
+            }
+        }
+    }
+    return result;
+}
 
 //Forward Error Correction encoding
 string DNA_encoder::FEC_encoding(string digital_data) {
@@ -58,9 +106,7 @@ string DNA_encoder::FEC_encoding(string digital_data) {
     }
     return result;
 }
-
-//RS_encoding
-string DNA_encoder::ReedSolomon_encoding(string digital_data) {
+string DNA_encoder::RS_2bits_rotation(string digital_data){
     // step 0: padding to a multiple of 3
     //cout << "digital_data.size() = " << digital_data.size() << endl;
     while (digital_data.size() % 30 != 0){
@@ -90,7 +136,120 @@ string DNA_encoder::ReedSolomon_encoding(string digital_data) {
         // cout << "encoded length = " << strlen(cur_encoded) << endl;
         memcpy(rs_result + j, cur_encoded, ENCODED_LENGTH);
     }
-    //cout << "rs_result" << rs_result << endl;
+
+//rotation code
+    string result;
+    for (std::size_t i = 0; i < sizeof(rs_result); i++)
+    {
+        bitset<8> bits(rs_result[i]);
+        for (int j = 0; j < 8; j+=2) {
+            if (bits[j]==0){
+                if (bits[j+1]==0) {
+                    last_bit=rotating_encoding_table_[0][last_bit];
+                    result+=last_bit;
+                }
+                else if (bits[j+1]==1) {
+                    last_bit=rotating_encoding_table_[1][last_bit];
+                    result+=last_bit;
+                }
+            }
+            else if (bits[j]==1){
+                if (bits[j+1]==0) {
+                    last_bit=rotating_encoding_table_[2][last_bit];
+                    result+=last_bit;
+                }
+                else if (bits[j+1]==1) {
+                    last_bit=rotating_encoding_table_[3][last_bit];
+                    result+=last_bit;
+                }
+            }
+        }
+    }
+    return result;
+}
+string DNA_encoder::RS_rotation(string digital_data) {
+    // step 0: padding to a multiple of 3
+    //cout << "digital_data.size() = " << digital_data.size() << endl;
+    while (digital_data.size() % 30 != 0){
+        digital_data = digital_data + '\0';
+    }
+    //cout << "digital_data.size() = " << digital_data.size() << endl;
+
+    // step 1: apply RS encoding on each 30-bytes block
+    const int MSG_LENGTH = 30;
+    const int ECC_LENGTH = 6;
+    const int ENCODED_LENGTH = MSG_LENGTH + ECC_LENGTH;
+    RS::ReedSolomon<MSG_LENGTH, ECC_LENGTH> rs;
+
+    int n_rs_unit = digital_data.size() / MSG_LENGTH;
+    //cout << "n_rs_unit = " << n_rs_unit << endl;
+    //cout << "encoded_unit_length = " << ENCODED_LENGTH * n_rs_unit << endl;
+    char rs_result[ENCODED_LENGTH * n_rs_unit];
+    for (int i = 0, j = 0; i < digital_data.size(); i += MSG_LENGTH, j += ENCODED_LENGTH) {
+        char message[MSG_LENGTH+1];
+        message[MSG_LENGTH] = '\0';
+        memcpy(message, digital_data.c_str()+i, MSG_LENGTH);
+        // cout << "message = " << message << endl;
+        char cur_encoded[ENCODED_LENGTH+1];
+        cur_encoded[ENCODED_LENGTH] = '\0';
+        rs.Encode(message, cur_encoded);
+        // cout << "encoded message = " << cur_encoded << endl;
+        // cout << "encoded length = " << strlen(cur_encoded) << endl;
+        memcpy(rs_result + j, cur_encoded, ENCODED_LENGTH);
+    }
+
+//rotation code
+    string result;
+    for (std::size_t i = 0; i < sizeof(rs_result); i+=2)
+    {
+        //cover from binary to decimal
+        bitset<8> bits(rs_result[i]);
+        int decimal_1 = bits.to_ulong();
+        bitset<8> bits_2(rs_result[i+1]);
+        int decimal_2 = bits_2.to_ulong();
+        int decimal = decimal_2*1024+decimal_1;
+
+        //covert to ternary & rotate encoding
+        for (int i=0; i<11; i++){
+            last_bit=rotating_encoding_table_[decimal%3][last_bit];
+            result+=last_bit;
+            decimal/=3;
+        }
+    }
+    return result;
+}
+
+string DNA_encoder::RS_GF47(string digital_data) {
+    // step 0: padding to a multiple of 3
+    //cout << "digital_data.size() = " << digital_data.size() << endl;
+    while (digital_data.size() % 30 != 0){
+        digital_data = digital_data + '\0';
+    }
+    //cout << "digital_data.size() = " << digital_data.size() << endl;
+
+    // step 1: apply RS encoding on each 30-bytes block
+    const int MSG_LENGTH = 30;
+    const int ECC_LENGTH = 6;
+    const int ENCODED_LENGTH = MSG_LENGTH + ECC_LENGTH;
+    RS::ReedSolomon<MSG_LENGTH, ECC_LENGTH> rs;
+
+    int n_rs_unit = digital_data.size() / MSG_LENGTH;
+    //cout << "n_rs_unit = " << n_rs_unit << endl;
+    //cout << "encoded_unit_length = " << ENCODED_LENGTH * n_rs_unit << endl;
+    char rs_result[ENCODED_LENGTH * n_rs_unit];
+    for (int i = 0, j = 0; i < digital_data.size(); i += MSG_LENGTH, j += ENCODED_LENGTH) {
+        char message[MSG_LENGTH+1];
+        message[MSG_LENGTH] = '\0';
+        memcpy(message, digital_data.c_str()+i, MSG_LENGTH);
+        // cout << "message = " << message << endl;
+        char cur_encoded[ENCODED_LENGTH+1];
+        cur_encoded[ENCODED_LENGTH] = '\0';
+        rs.Encode(message, cur_encoded);
+        // cout << "encoded message = " << cur_encoded << endl;
+        // cout << "encoded length = " << strlen(cur_encoded) << endl;
+        memcpy(rs_result + j, cur_encoded, ENCODED_LENGTH);
+    }
+
 
     // step 2: apply mapping from encoded bytes to nt
     int total_rs_len = ENCODED_LENGTH * n_rs_unit;
@@ -129,6 +288,67 @@ string DNA_encoder::ReedSolomon_encoding(string digital_data) {
     return result;
 }
 
+string DNA_encoder::RS_GF25(string digital_data) {
+    // step 0: padding to a multiple of 3
+    //cout << "digital_data.size() = " << digital_data.size() << endl;
+    while (digital_data.size() % 30 != 0){
+        digital_data = digital_data + '\0';
+    }
+    //cout << "digital_data.size() = " << digital_data.size() << endl;
+
+    // step 1: apply RS encoding on each 30-bytes block
+    const int MSG_LENGTH = 30;
+    const int ECC_LENGTH = 6;
+    const int ENCODED_LENGTH = MSG_LENGTH + ECC_LENGTH;
+    RS::ReedSolomon<MSG_LENGTH, ECC_LENGTH> rs;
+
+    int n_rs_unit = digital_data.size() / MSG_LENGTH;
+    //cout << "n_rs_unit = " << n_rs_unit << endl;
+    //cout << "encoded_unit_length = " << ENCODED_LENGTH * n_rs_unit << endl;
+    char rs_result[ENCODED_LENGTH * n_rs_unit];
+    for (int i = 0, j = 0; i < digital_data.size(); i += MSG_LENGTH, j += ENCODED_LENGTH) {
+        char message[MSG_LENGTH+1];
+        message[MSG_LENGTH] = '\0';
+        memcpy(message, digital_data.c_str()+i, MSG_LENGTH);
+        // cout << "message = " << message << endl;
+        char cur_encoded[ENCODED_LENGTH+1];
+        cur_encoded[ENCODED_LENGTH] = '\0';
+        rs.Encode(message, cur_encoded);
+        // cout << "encoded message = " << cur_encoded << endl;
+        // cout << "encoded length = " << strlen(cur_encoded) << endl;
+        memcpy(rs_result + j, cur_encoded, ENCODED_LENGTH);
+    }
+
+
+    // step 2: apply mapping from encoded bytes to nt
+    // convert from 2^8 to 24^2
+    int total_rs_len = ENCODED_LENGTH * n_rs_unit;
+    vector<char> result_cstring;
+
+    for (int i = 0; i < total_rs_len; i++) {
+
+        unsigned int middle_num = (((unsigned int)rs_result[i+1])&0xff);
+        // cout << "l r m = " << hex << (unsigned int)(char)(rs_result[i]) << '\t' << (unsigned int)(rs_result[i+1]) << '\t' << middle_num << endl << flush;
+        unsigned int base24_num[2];
+        base24_num[1] = middle_num % 25;
+        middle_num /= 25;
+        base24_num[0] = middle_num % 25;
+        middle_num /= 25;
+        assert(middle_num == 0);
+
+        // mapping to nt
+        for (int k1 = 0; k1 < 2; k1++) {
+            for (int k2 = 0; k2 < 3; k2++) {
+                // cout << j << ' ' << base47_num[k1] << ' ' << endl;;
+                result_cstring.push_back(RS_table[base24_num[k1]][k2]);
+                //cout << j-1 << ' ' << RS_table[base47_num[k1]][k2] << endl;
+            }
+        }
+    }
+
+    string result(result_cstring.begin(),result_cstring.end());
+    return result;
+}
 
 //direct mapping 00-A 01-T 10-C 11-G
 string DNA_encoder::direct_encoding(string digital_data) {
@@ -162,25 +382,6 @@ string DNA_encoder::direct_encoding(string digital_data) {
 }
 
 
-//rotate encoding without huffman tree compression
-string DNA_encoder::base3_rotate_encoding(string digital_data) {
-    string result;
-    for (std::size_t i = 0; i < digital_data.size(); i++)
-    {
-        //cover from binary to decimal
-        bitset<8> bits(digital_data.c_str()[i]);
-        int decimal = bits.to_ulong();
-        //covert to ternary & rotate encoding
-        for (int i=0; i<6; i++){
-            last_bit=rotating_encoding_table_[decimal%3][last_bit];
-            
-            result+=last_bit;
-            decimal/=3;
-        }
-    }
-    return result;
-}
-
 // strand level randomize: pseudo_strand XOR encoded_strand
 void DNA_encoder::randomize_XOR(string &digital_data) {
     for(int i=0; i<digital_data.size(); i+=pseudo_random_sequence_.size()){
@@ -207,7 +408,7 @@ void DNA_encoder::encoding_stranding(){
 
     long int strand_num=0;
     //create reading buffer
-    uint8_t buf[1024*1024];
+    uint8_t buf[30];
     //go over all files to chunking and encoding
     FILE *fp;
     string nt_sequence;
@@ -235,14 +436,17 @@ void DNA_encoder::encoding_stranding(){
 
 
             // rotate code
-            if(g_encoding_scheme==1){
-                string strand=base3_rotate_encoding(digital_data);
-                payload_file<<">payload"<<strand_num++<<endl;
+            if(g_encoding_scheme==1) {
+                if (g_if_randomization) {
+                    randomize_XOR(digital_data);
+                }
+                string strand = RS_rotation(digital_data);
+                //string strand=RS_2bits_rotation(digital_data);
+                //string strand=Church_encoding(digital_data);
+                payload_file << ">payload" << strand_num++ << endl;
                 // execute transformation: mapping/swap/...
-                payload_file<<strand<<endl;
+                payload_file << strand << endl;
                 total_len += strand.length();
-
-                    
             }
             else if(g_encoding_scheme==0){
                 string strand=direct_encoding(digital_data);
@@ -250,8 +454,6 @@ void DNA_encoder::encoding_stranding(){
                 // execute transformation: mapping/swap/...
                 payload_file<<strand<<endl;
                 total_len += strand.length();
-
-                    
             }
             else if(g_encoding_scheme==2){
                 // 200 nts correspoinding to 320 bits
@@ -290,14 +492,12 @@ void DNA_encoder::encoding_stranding(){
                     else {
                         digital_data.erase(0, 40);
                     }
-
                 }
                 //nt_sequence=FEC_encoding(digital_data);
             }
             //else if(g_xxx_code){}
             else
                 cout<<"no encoding scheme"<<endl;
-
         }
         fclose(fp);
     }
@@ -347,15 +547,18 @@ void DNA_encoder::encoding_no_strand(){
             string digital_data ((char*)ptr,len);
 
             if(g_encoding_scheme==1)
-                nt_sequence=base3_rotate_encoding(digital_data);
+                nt_sequence=RS_rotation(digital_data);
+                //nt_sequence=base3_rotate_encoding(digital_data);
             else if (g_encoding_scheme==2)
                 nt_sequence=FEC_encoding(digital_data);
             else if (g_encoding_scheme==3)
-                nt_sequence=ReedSolomon_encoding(digital_data);
+                //nt_sequence=RS_GF47(digital_data);
+                nt_sequence=RS_GF25(digital_data);
             else
                 cout<<"no encoding scheme"<<endl;
             payload_file<<nt_sequence;
             total_len += nt_sequence.length();
+
         }
 	payload_file<<endl;
         fclose(fp);
@@ -431,8 +634,55 @@ void DNA_encoder::initial_rotating_encoding_table() {
     rotating_encoding_table_.push_back(bit_value_2);
 }
 
+void DNA_encoder::initial_twobits_rotating_encoding_table() {
+    /*
+     *  [ 0
+     *      [A: C
+     *      [T: A
+     *      [C: G
+     *      [G: T
+     *  [ 1
+     *      [A: G
+     *      [T: C
+     *      [C: T
+     *      [G: A
+     *  [ 2
+     *      [A: T
+     *      [T: G
+     *      [C: A
+     *      [G: C
+     * */
+    unordered_map<string,string> bit_value_00;
+    unordered_map<string,string> bit_value_01;
+    unordered_map<string,string> bit_value_10;
+    unordered_map<string,string> bit_value_11;
+    string A="A";
+    string T="T";
+    string C="C";
+    string G="G";
+    bit_value_00.emplace(A,T);
+    bit_value_00.emplace(T,C);
+    bit_value_00.emplace(C,G);
+    bit_value_00.emplace(G,A);
+    rotating_encoding_table_.push_back(bit_value_00);
+    bit_value_01.emplace(A,C);
+    bit_value_01.emplace(T,G);
+    bit_value_01.emplace(C,A);
+    bit_value_01.emplace(G,T);
+    rotating_encoding_table_.push_back(bit_value_01);
+    bit_value_10.emplace(A,G);
+    bit_value_10.emplace(T,A);
+    bit_value_10.emplace(C,T);
+    bit_value_10.emplace(G,C);
+    rotating_encoding_table_.push_back(bit_value_10);
+    bit_value_11.emplace(A,A);
+    bit_value_11.emplace(T,T);
+    bit_value_11.emplace(C,C);
+    bit_value_11.emplace(G,G);
+    rotating_encoding_table_.push_back(bit_value_10);
+}
 
-void DNA_encoder::init_RS_table() {
+void DNA_encoder::init_GF47_table() {
     RS_table[0] = "ACA"; RS_table[1] = "CCA"; RS_table[2] = "GCA";
     RS_table[3] = "TCA"; RS_table[4] = "AGA"; RS_table[5] = "CGA";
     RS_table[6] = "GGA"; RS_table[7] = "TGA"; RS_table[8] = "ATA";
@@ -449,7 +699,25 @@ void DNA_encoder::init_RS_table() {
     RS_table[39] = "TAT"; RS_table[40] = "ACT"; RS_table[41] = "CCT";
     RS_table[42] = "GCT"; RS_table[43] = "TCT"; RS_table[44] = "AGT";
     RS_table[45] = "CGT"; RS_table[46] = "GGT";
+}
 
+void DNA_encoder::init_GF25_table() {
+    RS_table[0] = "GCA";
+    RS_table[1] = "TCA"; RS_table[2] = "CGA";
+     RS_table[3] = "TGA";
+    RS_table[4] = "CTA"; RS_table[5] = "GTA";
+      RS_table[6] = "GAC";
+    RS_table[7] = "TAC"; RS_table[8] = "AGC";
+     RS_table[9] = "TGC"; RS_table[10] = "ATC";
+     RS_table[11] = "GTC";
+     RS_table[12] = "CAG";
+    RS_table[13] = "TAG"; RS_table[14] = "ACG";
+     RS_table[15] = "TCG"; RS_table[16] = "ATG";
+    RS_table[17] = "CTG";
+     RS_table[18] = "CAT"; RS_table[19] = "GAT";
+    RS_table[20] = "TAT"; RS_table[21] = "ACT";
+    RS_table[22] = "GCT";  RS_table[23] = "AGT";
+    RS_table[24] = "CGT";
 }
 
 DNA_encoder::DNA_encoder() {
@@ -468,12 +736,12 @@ DNA_encoder::DNA_encoder() {
     }
     //initial rotating_encoding_table
     initial_rotating_encoding_table();
-
+    initial_twobits_rotating_encoding_table();
     initial_FEC_table();
 
     //initilize RS table
-    init_RS_table();
-
+    //init_GF47_table();
+    init_GF25_table();
 
     if (g_if_pre_stranding){// output 200 nts strands
         encoding_stranding();

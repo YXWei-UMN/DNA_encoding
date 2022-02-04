@@ -23,19 +23,22 @@ public:
     void encoding_stranding();
     // translate to nt sequence, without strand
     void encoding_no_strand();
-    // translate to nt sequence in file level (1 file 1 strand)
-    void encoding_file();
 
     // encode a payload sequence in base 3 with rotate manner
-    string base3_rotate_encoding(string digital_data);
     void initial_rotating_encoding_table();
+    void initial_twobits_rotating_encoding_table();
 
     string FEC_encoding(string digital_data);
+    string Church_encoding(string digital_data);
     void initial_FEC_table();
 
     // RS encoding. Reference: Robust Chemical Preservation of Digital Information on DNA in Silica with Error-Correcting Codes
-    string ReedSolomon_encoding(string digital_data);
-    void init_RS_table();
+    string RS_GF47(string digital_data);
+    string RS_GF25(string digital_data);
+    string RS_rotation(string digital_data);
+    string RS_2bits_rotation(string digital_data);
+    void init_GF47_table();
+    void init_GF25_table();
     string RS_table[48];
 
     uint16_t CCITT16(char *ptr, int length);
@@ -47,7 +50,7 @@ public:
     string pseudo_random_sequence_;
     vector<string> all_files_;
 
-
+    vector<unordered_map<string,string>> twobits_rotating_encoding_table_;
     vector<unordered_map<string,string>> rotating_encoding_table_;
     string FEC_table1;
     vector<vector<string>> FEC_table2;
