@@ -516,22 +516,19 @@ void DNA_encoder::encoding_no_strand(){
     payload_path += to_string(num_of_payload_file);
     payload_path += ".txt";
     payload_file.open(payload_path,ios::out);
-
+    int num_of_file = 0;
+    payload_file<<">payload"<<num_of_file<<endl;
+    num_of_file++;
     //create chunking buffer and related structure
     uint8_t buf[1024*1024];
     //go over all files to chunking and encoding
     FILE *fp;
     string nt_sequence;
-    int num_of_file = 0;
 
 
     for(auto n:all_files_){
-
         fp = fopen(n.c_str(), "r");
         if (fp==NULL) {fputs ("File open error",stderr); exit (1);}
-
-        payload_file<<">payload"<<num_of_file<<endl;
-	num_of_file++;
 
         while ( !feof(fp) ) {
             size_t len = fread(buf, 1, sizeof(buf), fp);
@@ -559,7 +556,8 @@ void DNA_encoder::encoding_no_strand(){
                 num_of_payload_file += 1;
                 payload_path = g_payload_path+"payload"+to_string(num_of_payload_file)+".txt";
                 payload_file.open(payload_path,ios::out);
-                num_of_file = 0;
+                payload_file<<">payload"<<num_of_file<<endl;
+                num_of_file++;
             }
 
         }
