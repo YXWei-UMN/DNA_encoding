@@ -524,16 +524,9 @@ void DNA_encoder::encoding_no_strand(){
     string nt_sequence;
     int num_of_file = 0;
 
-    if (total_len>=(long)5*1024*1024*1024){
-        total_len = 0;
-        payload_file.close();
-        num_of_payload_file += 1;
-        payload_path = g_payload_path+"payload"+to_string(num_of_payload_file)+".txt";
-        payload_file.open(payload_path,ios::out);
-        num_of_file = 0;
-    }
 
     for(auto n:all_files_){
+
         fp = fopen(n.c_str(), "r");
         if (fp==NULL) {fputs ("File open error",stderr); exit (1);}
 
@@ -559,6 +552,15 @@ void DNA_encoder::encoding_no_strand(){
                 cout<<"no encoding scheme"<<endl;
             payload_file<<nt_sequence;
             total_len += nt_sequence.length();
+
+            if (total_len>=(long)5*1024*1024*1024){
+                total_len = 0;
+                payload_file.close();
+                num_of_payload_file += 1;
+                payload_path = g_payload_path+"payload"+to_string(num_of_payload_file)+".txt";
+                payload_file.open(payload_path,ios::out);
+                num_of_file = 0;
+            }
 
         }
 	payload_file<<endl;
