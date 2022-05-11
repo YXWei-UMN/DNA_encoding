@@ -39,12 +39,17 @@ public:
     string RS_2bits_rotation(string digital_data);
     void init_GF47_table();
     void init_GF25_table();
+    void init_last_20nt();
+    void init_heuristic_encoding();
     string RS_table[48];
 
     uint16_t CCITT16(char *ptr, int length);
 
     string direct_encoding(string digital_data);
-
+    string prefix_encoding(string digital_data);
+    string heuristic_encoding(string digital_data);
+    string sort_triplets();
+    string complementary_sequence(string str);
     void randomize_XOR(string& digital_data);
 
     string pseudo_random_sequence_;
@@ -55,6 +60,10 @@ public:
     string FEC_table1;
     vector<vector<string>> FEC_table2;
     string last_bit = "C"; // used for the fist rotating encoding
+
+    list<string> last_20nt_;
+    list<char> last_17nt_;
+    list<string> NT_triplets_;
 };
 
 

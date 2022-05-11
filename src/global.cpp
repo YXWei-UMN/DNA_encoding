@@ -22,6 +22,7 @@ bool g_if_ECC;
 int g_encoding_scheme;
 int g_swap_granularity;
 int g_dedup;
+int g_num_bit_per_triplet;
 int Parse(string cfgfile){
     ifstream filestream(cfgfile, ios_base::in);
     if (filestream.fail()) {
@@ -72,6 +73,9 @@ int Parse(string cfgfile){
                 break;
             case hash_("encoding_scheme"):
                 g_encoding_scheme = stoi(value);
+                break;
+            case hash_("num_bit_per_triplet"):
+                g_num_bit_per_triplet = stoi(value);
                 break;
             case hash_("dedup"):
                 g_dedup = stoi(value);

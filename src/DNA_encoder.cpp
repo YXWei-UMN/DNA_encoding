@@ -380,6 +380,210 @@ string DNA_encoder::direct_encoding(string digital_data) {
     }
     return result;
 }
+string DNA_encoder::complementary_sequence(string str) {
+    string complementary_str;
+    for(auto n:str){
+        switch (n){
+            case 'A':{
+                complementary_str.insert (0, 1, 'T');
+                break;
+            }
+            case 'T':{
+                complementary_str.insert (0, 1, 'A');
+                break;
+            }
+            case 'C':{
+                complementary_str.insert (0, 1, 'G');
+                break;
+            }
+            case 'G':{
+                complementary_str.insert (0, 1, 'C');
+                break;
+            }
+        }
+    }
+    return complementary_str;
+}
+
+string DNA_encoder::sort_triplets() {
+    string result;
+    vector<pair<int,string>> all_triplet_candidates_and_score;
+
+
+    list<string> homo1;
+    //homo
+    for (auto n:NT_triplets_){
+        if (last_17nt_.back()!=n[0])
+            homo1.push_back(n);   // since n has no homo, as long as
+    }
+
+    for (auto m:homo1){
+        int matches=0;
+        string complement_str1 = complementary_sequence(m);
+
+        //str 1
+        auto it = last_17nt_.begin();
+        for (int i = 0; i < 15; ++i) {
+            auto tmp_it = it;
+            if (*tmp_it != complement_str1[0]) {
+                it++;
+                continue;
+            }
+            tmp_it++;
+            if (*tmp_it != complement_str1[1]) {
+                it++;
+                continue;
+            }
+            tmp_it++;
+            if (*tmp_it != complement_str1[2]) {
+                it++;
+                continue;
+            }
+            matches++;
+            break;
+        }
+
+
+        //str 2
+        string str2;
+        str2.insert (0, 1, m[0]);
+        it = last_17nt_.end();
+        it--;
+        str2.insert (0, 1, *it);
+        it--;
+        str2.insert (0, 1, *it);
+        string complement_str2 = complementary_sequence(str2);
+
+        it = last_17nt_.begin();
+        for (int i = 0; i < 15; ++i) {
+            auto tmp_it = it;
+            if (*tmp_it != complement_str2[0]) {
+                it++;
+                continue;
+            }
+            tmp_it++;
+            if (*tmp_it != complement_str2[1]) {
+                it++;
+                continue;
+            }
+            tmp_it++;
+            if (*tmp_it != complement_str2[2]) {
+                it++;
+                continue;
+            }
+            matches++;
+            break;
+        }
+
+
+        //str 3
+        string str3;
+        str3.insert (0, 1, m[1]);
+        str3.insert (0, 1, m[0]);
+        it = last_17nt_.end();
+        it--;
+        str3.insert (0, 1, *it);
+        string complement_str3 = complementary_sequence(str3);
+
+        it = last_17nt_.begin();
+        for (int i = 0; i < 15; ++i) {
+            auto tmp_it = it;
+            if (*tmp_it != complement_str3[0]) {
+                it++;
+                continue;
+            }
+            tmp_it++;
+            if (*tmp_it != complement_str3[1]) {
+                it++;
+                continue;
+            }
+            tmp_it++;
+            if (*tmp_it != complement_str3[2]) {
+                it++;
+                continue;
+            }
+            matches++;
+            break;
+        }
+
+        //cout<<"triplet "<<m<<" matches "<<matches<<endl;
+        all_triplet_candidates_and_score.push_back(make_pair(matches,m));
+    }
+
+    sort(all_triplet_candidates_and_score.begin(), all_triplet_candidates_and_score.end());
+
+    int rad = rand()%8;
+    result=all_triplet_candidates_and_score[rad].second;
+    //cout<<"select top "<<rad<<" "<<result<<"   its matches are"<<all_triplet_candidates_and_score[rad].first<<result<<endl;
+
+    //replace last 17
+    for (int i = 0; i < result.size(); ++i) {
+        last_17nt_.emplace_back(result[i]);
+        last_17nt_.erase(last_17nt_.begin());
+    }
+    return result;
+}
+
+
+string DNA_encoder::heuristic_encoding(string digital_data) {
+    string result;
+
+        //grab 30*8 bits a time
+        for (int j = 0; j < 30; ++j) {
+            bitset<8> bits1(digital_data.c_str()[j]);
+        }
+
+
+        for (int j = 0; j < 240; j+=g_num_bit_per_triplet) {
+            //mapping between binary bits and NT triplets
+            //because in experiment, we dont have to decode, we can just encode with the top one
+
+            //list<string>triplets = sort_triplets();
+
+            result+=sort_triplets();
+        }
+
+    return result;
+}
+
+string DNA_encoder::prefix_encoding(string digital_data) {
+    string result;
+    for (std::size_t i = 0; i < digital_data.size(); i++)
+    {
+        //cover from binary to decimal
+        bitset<8> bits(digital_data.c_str()[i]);
+        for (int j = 0; j < 8; j+=2) {
+            if (bits[j]==1){
+               result+=*last_20nt_.begin();
+               last_20nt_.emplace_back(*last_20nt_.begin());
+               last_20nt_.erase(last_20nt_.begin());
+            }
+            else if (bits[j]==0){
+                if (*last_20nt_.begin()=="A"){
+                    result+="T";
+                    last_20nt_.emplace_back("T");
+                    last_20nt_.erase(last_20nt_.begin());
+                } else if (*last_20nt_.begin()=="T"){
+                    result+="A";
+                    last_20nt_.emplace_back("A");
+                    last_20nt_.erase(last_20nt_.begin());
+                }else if (*last_20nt_.begin()=="C"){
+                    result+="G";
+                    last_20nt_.emplace_back("G");
+                    last_20nt_.erase(last_20nt_.begin());
+                } else if (*last_20nt_.begin()=="G"){
+                    result+="C";
+                    last_20nt_.emplace_back("C");
+                    last_20nt_.erase(last_20nt_.begin());
+                } else {
+                    cerr<<"bit not 1 or 0"<<endl;
+                    EXIT_FAILURE;
+                }
+            }
+        }
+    }
+    return result;
+}
 
 
 // strand level randomize: pseudo_strand XOR encoded_strand
@@ -495,7 +699,20 @@ void DNA_encoder::encoding_stranding(){
                 }
                 //nt_sequence=FEC_encoding(digital_data);
             }
-            //else if(g_xxx_code){}
+            else if(g_encoding_scheme==4){ //prefix encoding
+                string strand=prefix_encoding(digital_data);
+                payload_file<<">payload"<<strand_num++<<endl;
+                // execute transformation: mapping/swap/...
+                payload_file<<strand<<endl;
+                total_len += strand.length();
+            }
+            else if(g_encoding_scheme==5){ //heuristic encoding
+                string strand=heuristic_encoding(digital_data);
+                payload_file<<">payload"<<strand_num++<<endl;
+                // execute transformation: mapping/swap/...
+                payload_file<<strand<<endl;
+                total_len += strand.length();
+            }
             else
                 cout<<"no encoding scheme"<<endl;
         }
@@ -591,6 +808,98 @@ void DNA_encoder::initial_FEC_table(){
                 {"AC","CG","GT","TA"},
                 {"AG","CT","GA","TC"},
                 {"AT","CA","GC","TG"}};
+}
+
+void DNA_encoder::init_heuristic_encoding() {
+    // init last 17 nt: TCACTATGCTCGCTATG
+    // provide all NT triplets
+    last_17nt_.emplace_back('T');
+    last_17nt_.emplace_back('C');
+    last_17nt_.emplace_back('A');
+    last_17nt_.emplace_back('C');
+    last_17nt_.emplace_back('T');
+    last_17nt_.emplace_back('A');
+    last_17nt_.emplace_back('T');
+    last_17nt_.emplace_back('G');
+    last_17nt_.emplace_back('C');
+    last_17nt_.emplace_back('T');
+    last_17nt_.emplace_back('C');
+    last_17nt_.emplace_back('G');
+    last_17nt_.emplace_back('C');
+    last_17nt_.emplace_back('T');
+    last_17nt_.emplace_back('A');
+    last_17nt_.emplace_back('T');
+    last_17nt_.emplace_back('G');
+
+    //NT_triplets_.emplace_back("AAA");
+    //NT_triplets_.emplace_back("AAT");
+    //NT_triplets_.emplace_back("AAC");
+    //NT_triplets_.emplace_back("AAG");
+    NT_triplets_.emplace_back("ATA");
+    //NT_triplets_.emplace_back("ATT");
+    NT_triplets_.emplace_back("ATC");
+    NT_triplets_.emplace_back("ATG");
+    NT_triplets_.emplace_back("ACA");
+    NT_triplets_.emplace_back("ACT");
+    //NT_triplets_.emplace_back("ACC");
+    NT_triplets_.emplace_back("ACG");
+    NT_triplets_.emplace_back("AGA");
+    NT_triplets_.emplace_back("AGT");
+    NT_triplets_.emplace_back("AGC");
+    //NT_triplets_.emplace_back("AGG");
+
+
+    //NT_triplets_.emplace_back("TAA");
+    NT_triplets_.emplace_back("TAT");
+    NT_triplets_.emplace_back("TAC");
+    NT_triplets_.emplace_back("TAG");
+    //NT_triplets_.emplace_back("TTA");
+    //NT_triplets_.emplace_back("TTT");
+    //NT_triplets_.emplace_back("TTC");
+    //NT_triplets_.emplace_back("TTG");
+    NT_triplets_.emplace_back("TCA");
+    NT_triplets_.emplace_back("TCT");
+    //NT_triplets_.emplace_back("TCC");
+    NT_triplets_.emplace_back("TCG");
+    NT_triplets_.emplace_back("TGA");
+    NT_triplets_.emplace_back("TGT");
+    NT_triplets_.emplace_back("TGC");
+    //NT_triplets_.emplace_back("TGG");
+
+    //NT_triplets_.emplace_back("CAA");
+    NT_triplets_.emplace_back("CAT");
+    NT_triplets_.emplace_back("CAC");
+    NT_triplets_.emplace_back("CAG");
+    NT_triplets_.emplace_back("CTA");
+    //NT_triplets_.emplace_back("CTT");
+    NT_triplets_.emplace_back("CTC");
+    NT_triplets_.emplace_back("CTG");
+    //NT_triplets_.emplace_back("CCA");
+    //NT_triplets_.emplace_back("CCT");
+    //NT_triplets_.emplace_back("CCC");
+    //NT_triplets_.emplace_back("CCG");
+    NT_triplets_.emplace_back("CGA");
+    NT_triplets_.emplace_back("CGT");
+    NT_triplets_.emplace_back("CGC");
+    //NT_triplets_.emplace_back("CGG");
+
+    //NT_triplets_.emplace_back("GAA");
+    NT_triplets_.emplace_back("GAT");
+    NT_triplets_.emplace_back("GAC");
+    NT_triplets_.emplace_back("GAG");
+    NT_triplets_.emplace_back("GTA");
+    //NT_triplets_.emplace_back("GTT");
+    NT_triplets_.emplace_back("GTC");
+    NT_triplets_.emplace_back("GTG");
+    NT_triplets_.emplace_back("GCA");
+    NT_triplets_.emplace_back("GCT");
+    //NT_triplets_.emplace_back("GCC");
+    NT_triplets_.emplace_back("GCG");
+    //NT_triplets_.emplace_back("GGA");
+    //NT_triplets_.emplace_back("GGT");
+    //NT_triplets_.emplace_back("GGC");
+    //NT_triplets_.emplace_back("GGG");
+
 }
 
 void DNA_encoder::initial_rotating_encoding_table() {
@@ -721,6 +1030,39 @@ void DNA_encoder::init_GF25_table() {
     RS_table[24] = "CGT";
 }
 
+void DNA_encoder::init_last_20nt(){
+    /*for(int i=0; i<5; i++){
+        last_20nt_.push_back("A");
+        last_20nt_.push_back("G");
+        last_20nt_.push_back("T");
+        last_20nt_.push_back("C");
+    }*/
+
+    last_20nt_.emplace_back("G");
+    last_20nt_.emplace_back("A");
+    last_20nt_.emplace_back("C");
+    last_20nt_.emplace_back("A");
+    last_20nt_.emplace_back("T");
+    last_20nt_.emplace_back("C");
+
+
+    /*last_20nt_.emplace_back("C");
+    last_20nt_.emplace_back("C");
+
+    last_20nt_.emplace_back("A");
+    last_20nt_.emplace_back("A");
+    last_20nt_.emplace_back("A");
+    last_20nt_.emplace_back("G");
+    last_20nt_.emplace_back("G");
+    last_20nt_.emplace_back("G");
+    last_20nt_.emplace_back("T");
+    last_20nt_.emplace_back("T");
+    last_20nt_.emplace_back("T");
+    last_20nt_.emplace_back("C");
+    last_20nt_.emplace_back("C");
+    last_20nt_.emplace_back("C");*/
+}
+
 DNA_encoder::DNA_encoder() {
     // generate 267-length pseudo random. 200 ternary code is 266.6 binary code (6:8)
     srand(std::time(nullptr)); // use current time as seed for random generator
@@ -739,7 +1081,8 @@ DNA_encoder::DNA_encoder() {
     initial_rotating_encoding_table();
     initial_twobits_rotating_encoding_table();
     initial_FEC_table();
-
+    init_last_20nt();
+    init_heuristic_encoding();
     //initilize RS table
     //init_GF47_table();
     init_GF25_table();
