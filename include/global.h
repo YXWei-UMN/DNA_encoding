@@ -58,7 +58,7 @@ extern long g_payload_size;
 extern long g_chunk_size;
 extern long g_strand_length;
 extern int g_swap_granularity;
-
+extern int g_num_bit_per_triplet;
 int Parse(string cfgfile);
 
 typedef std::uint64_t hash_t;
