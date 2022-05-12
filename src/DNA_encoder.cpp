@@ -603,12 +603,11 @@ void DNA_encoder::randomize_XOR(string &digital_data) {
 void DNA_encoder::encoding_stranding(){
     // create payload file to store encoded strands
     fstream payload_file;
-    int prefix = rand()%100;
+    int prefix = rand();
     string payload_path = g_payload_path+to_string(prefix)+"payload";
     int num_of_GB = 1;
     unsigned long total_len = 0;
     payload_path += to_string(num_of_GB);
-    payload_path += ".txt";
     payload_file.open(payload_path,ios::out);
 
     long int strand_num=0;
@@ -620,7 +619,31 @@ void DNA_encoder::encoding_stranding(){
 
 
 
-    for(auto n:all_files_){
+
+    // Todo remember to decommand all file initialization
+    fp = fopen(g_data_path.c_str(), "r");
+    if (fp==NULL) {fputs ("File open error",stderr); exit (1);}
+    while ( !feof(fp) ) {
+
+        //cout<<total_len<<endl;
+        size_t len = fread(buf, 1, sizeof(buf), fp);
+        // total_len += len;
+        uint8_t *ptr = &buf[0];
+
+        string digital_data ((char*)ptr,len);
+
+        string strand=heuristic_encoding(digital_data);
+        payload_file<<">payload"<<strand_num++<<endl;
+        // execute transformation: mapping/swap/...
+        payload_file<<strand<<endl;
+        total_len += strand.length();
+
+
+    }
+    fclose(fp);
+
+
+    /*for(auto n:all_files_){
         fp = fopen(n.c_str(), "r");
         if (fp==NULL) {fputs ("File open error",stderr); exit (1);}
         while ( !feof(fp) ) {
@@ -631,7 +654,7 @@ void DNA_encoder::encoding_stranding(){
                 total_len = 0;
                 payload_file.close();
                 num_of_GB += 1;
-                payload_path = g_payload_path+to_string(prefix)+"payload"+to_string(num_of_GB)+".txt";
+                payload_path = g_payload_path+to_string(prefix)+"payload"+to_string(num_of_GB);
                 payload_file.open(payload_path,ios::out);
             }
             //cout<<total_len<<endl;
@@ -720,7 +743,7 @@ void DNA_encoder::encoding_stranding(){
                 cout<<"no encoding scheme"<<endl;
         }
         fclose(fp);
-    }
+    }*/
     payload_file.close();
 }
 
@@ -1075,7 +1098,7 @@ DNA_encoder::DNA_encoder() {
 
 
     // record all file's path, use to read file & encode it
-    all_files_ = listFiles(g_data_path, true);
+    //all_files_ = listFiles(g_data_path, true);
 
     for(auto n:all_files_){
         cout<<n<<endl;
