@@ -603,7 +603,8 @@ void DNA_encoder::randomize_XOR(string &digital_data) {
 void DNA_encoder::encoding_stranding(){
     // create payload file to store encoded strands
     fstream payload_file;
-    string payload_path = g_payload_path+"payload";
+    int prefix = rand()%100;
+    string payload_path = g_payload_path+to_string(prefix)+"payload";
     int num_of_GB = 1;
     unsigned long total_len = 0;
     payload_path += to_string(num_of_GB);
@@ -617,6 +618,8 @@ void DNA_encoder::encoding_stranding(){
     FILE *fp;
     string nt_sequence;
 
+
+
     for(auto n:all_files_){
         fp = fopen(n.c_str(), "r");
         if (fp==NULL) {fputs ("File open error",stderr); exit (1);}
@@ -628,7 +631,7 @@ void DNA_encoder::encoding_stranding(){
                 total_len = 0;
                 payload_file.close();
                 num_of_GB += 1;
-                payload_path = g_payload_path+"payload"+to_string(num_of_GB)+".txt";
+                payload_path = g_payload_path+to_string(prefix)+"payload"+to_string(num_of_GB)+".txt";
                 payload_file.open(payload_path,ios::out);
             }
             //cout<<total_len<<endl;
