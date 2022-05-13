@@ -134,6 +134,7 @@ void VariableLength::ReadCollisions(string path) {
     
     assert(strand_id2name.size() == strand_name2id.size());
     assert(primer_id2name.size() == primer_name2id.size());
+    cout<<"total collided primers"<<primer_id2name.size()<<endl;
     n_strand += strand_id2name.size();
     n_primer = all_primers.size();
 }
