@@ -34,7 +34,6 @@ public:
 private:
     vector<bool> blind_spot;
     bool IsBlindSpot(unsigned int distance);
-    void dropout_ReadCollisions(string path);
     void ReadCollisions(string path); // read the blast collision result of a single file
     unordered_map<PrimerID, int> n_primer_collisions; // mapping from <primer id> to <the number of collisions>
 

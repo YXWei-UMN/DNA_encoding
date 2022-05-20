@@ -191,10 +191,9 @@ void VariableLength::Cut() {
 
 
 
-
-
     for (int i = 0; i < primer_process_order.size(); i++) {
         PrimerID primer_id = primer_process_order[i].second;
+
         if(discarded_primers.find(primer_id) != discarded_primers.end()) {
             continue;
         }
@@ -203,8 +202,6 @@ void VariableLength::Cut() {
         for (auto it = conflicts.begin(); it != conflicts.end(); it++){
             discarded_primers.insert(*it);
         }
-        
-        recovered_primers.insert(primer_id);
     }
 
     PrintStatistics();
@@ -219,4 +216,15 @@ void VariableLength::PrintStatistics() {
     cout << "n[free, recovered, discarded] = " << n_free << ' ' << n_recovered << ' ' << n_discarded << endl << flush;
     cout << "Available primer ratio before VarLen = " << (double)n_free/n_primer << endl << flush;
     cout << "Available primer ratio after VarLen = " << (double)(n_free+n_recovered)/n_primer << endl << flush;
+
+    double recovered_capacity=0;
+    for (auto i:primer_capacity_) {
+        if (discarded_primers.find(i.first)==discarded_primers.end()){
+            recovered_capacity+=i.second;
+        }
+    }
+    recovered_capacity = recovered_capacity*1.57/8/1024/1024/1024;
+    cout<<"recovered_capacity = " << recovered_capacity<<endl;
+
+
 }
