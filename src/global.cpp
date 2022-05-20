@@ -23,6 +23,7 @@ int g_encoding_scheme;
 int g_swap_granularity;
 int g_dedup;
 int g_num_bit_per_triplet;
+int g_var_len_algorithm;
 int Parse(string cfgfile){
     ifstream filestream(cfgfile, ios_base::in);
     if (filestream.fail()) {
@@ -82,6 +83,9 @@ int Parse(string cfgfile){
                 break;
             case hash_("program"):
                 g_program = stoi(value);
+                break;
+            case hash_("var_len_algorithm"):
+                g_var_len_algorithm = stoi(value);
                 break;
             default:
                 cout<<"unknown cfg: "<<key<<endl;
