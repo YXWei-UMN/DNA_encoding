@@ -157,15 +157,22 @@ void VariableLength::Cut() {
         ReadCollisions(all_files[i]);
     }
 
-    // self-confict primers should be ruled out from primer_confilct_list
-    for (auto it = discarded_primers.begin(); it != discarded_primers.end(); it++) {
-        primer_confilct_list.erase(*it);
-    }
-
     int ideal_capacity = 1.55*1000000*200/2; //devide by 2 since it's a primer not a primer pair
     for (auto it : primer_collision_num_){
-        int capacity = ideal_capacity - it.second*4*100; // we are using 64GB, collision num * 4 to scale to 200+GB
+        double capacity = ideal_capacity - it.second*4*100; // we are using 64GB, collision num * 4 to scale to 200+GB
+        capacity/=1024; // in case overflow
+        if (capacity<0){
+            discarded_primers.insert(it.first);
+            continue;
+        }
         primer_capacity_.emplace(it.first,capacity);
+    }
+
+    // prescreen self-confict primers / capacity < 0
+    for (auto it = discarded_primers.begin(); it != discarded_primers.end(); it++) {
+        primer_confilct_list.erase(*it);
+        primer_collision_num_.erase(*it);
+        primer_capacity_.erase(*it);
     }
 
     if (g_var_len_algorithm==1){
@@ -181,10 +188,12 @@ void VariableLength::Cut() {
     } else if (g_var_len_algorithm==3){
         // calculate capacity diff, push to primer_process_order
         for (auto it : primer_capacity_){
-            int capacity_diff=it.second;
+            double capacity_diff=it.second;
+            double tmp = capacity_diff;
             for (auto conflict_primer : primer_confilct_list[it.first]){
                 capacity_diff -= primer_capacity_[conflict_primer];
             }
+            if (capacity_diff>tmp) cout<<"large capacity_diff?? overflow"<<endl;
             primer_process_order.push_back(make_pair(capacity_diff, it.first));
         }
         sort(primer_process_order.begin(), primer_process_order.end(),sortbyfirst_descending);
@@ -207,62 +216,76 @@ void VariableLength::Cut() {
             continue;
         }
 
+        look_ahead_window.clear();
 
         if (g_var_len_algorithm==3){
 
-            for (int j = i+1; j <=i+200; ++j) {
+            int j=i+1;
+            int count=0;
+            while (count<=10000) {
+                if (j>=primer_process_order.size()) break;
 
-                if(discarded_primers.find(current_primer_id) != discarded_primers.end()) {
+                if(discarded_primers.find(primer_process_order[j].second) != discarded_primers.end()) {
+                    j++;
                     continue;
                 }
 
-                if(swapped.find(current_primer_id) != swapped.end()) {
+                if(swapped.find(primer_process_order[j].second) != swapped.end()) {
+                    j++;
                     continue;
                 }
 
                 look_ahead_window.insert(primer_process_order[j].second);
+                j++;
+                count++;
             }
-
             //get current primers' conflicts in the window
             auto conflicts = primer_confilct_list.find(current_primer_id)->second;
+            unordered_set<PrimerID> window_conflicts;
+            //cout<<"before "<<conflicts.size()<<endl;
             for (auto it:look_ahead_window){
-                if (conflicts.find(it)==conflicts.end()){
-                    conflicts.erase(it);
+                if (conflicts.find(it)!=conflicts.end()){
+                    window_conflicts.insert(it);
                 }
             }
+            //cout<<"after "<<window_conflicts.size()<<endl;
 
             // calculate window capacity diff for current primer
             int window_capacity_diff_of_current_primer = primer_capacity_.find(current_primer_id)->second;
-            for (auto it:conflicts){
+            //cout<<"primer "<<current_primer_id<<" window capacity diff(1):"<<window_capacity_diff_of_current_primer<<endl;
+            for (auto it:window_conflicts){
                 window_capacity_diff_of_current_primer -= primer_capacity_.find(it)->second;
             }
+            //cout<<"primer "<<current_primer_id<<" window capacity diff(2):"<<window_capacity_diff_of_current_primer<<endl;
 
             //only if capacity diff < 0 then swap
             if (window_capacity_diff_of_current_primer<0){
-                vector<pair<int,PrimerID>> window_capacity_diff_of_conflicts;
+                vector<pair<int,PrimerID>> window_capacity_diff_of_window_conflicts;
 
-                for (auto it:conflicts){
+                for (auto it:window_conflicts){
                     //get conflict primers' conflicts in the window
-                    auto conflicts_of_conflicts = primer_confilct_list.find(it)->second;
+                    auto conflicts_of_window_conflicts = primer_confilct_list.find(it)->second;
+                    unordered_set<PrimerID> window_conflicts_of_window_conflicts;
                     for (auto n:look_ahead_window){
-                        if (conflicts_of_conflicts.find(n)==conflicts_of_conflicts.end()){
-                            conflicts_of_conflicts.erase(n);
+                        if (conflicts_of_window_conflicts.find(n)!=conflicts_of_window_conflicts.end()){
+                            window_conflicts_of_window_conflicts.insert(n);
                         }
                     }
                     //calculate window capacity diff for conflict primer
                     int window_capacity_diff_of_conflit_primer = primer_capacity_.find(it)->second;
-                    for (auto n:conflicts_of_conflicts){
+                    for (auto n:window_conflicts_of_window_conflicts){
                         window_capacity_diff_of_conflit_primer -= primer_capacity_.find(n)->second;
                     }
-                    window_capacity_diff_of_conflicts.push_back(make_pair(window_capacity_diff_of_conflit_primer,it));
+                    window_capacity_diff_of_window_conflicts.push_back(make_pair(window_capacity_diff_of_conflit_primer,it));
                 }
 
-                sort(window_capacity_diff_of_conflicts.begin(), window_capacity_diff_of_conflicts.end(),sortbyfirst_descending);
+                sort(window_capacity_diff_of_window_conflicts.begin(), window_capacity_diff_of_window_conflicts.end(),sortbyfirst_descending);
 
-                if(window_capacity_diff_of_conflicts.begin()->first > window_capacity_diff_of_current_primer){
+                if(window_capacity_diff_of_window_conflicts.begin()->first > window_capacity_diff_of_current_primer){
+                    //cout<<"and swap with primer "<<window_capacity_diff_of_window_conflicts.begin()->second<<"  capacity_diff:"<<window_capacity_diff_of_window_conflicts.begin()->first<<endl;
                     //swap currrent primer and the max conflict primer
-                    current_primer_id=window_capacity_diff_of_conflicts.begin()->second;
-                    swapped.insert(window_capacity_diff_of_conflicts.begin()->second);
+                    current_primer_id=window_capacity_diff_of_window_conflicts.begin()->second;
+                    swapped.insert(window_capacity_diff_of_window_conflicts.begin()->second);
                 }
             }
         }
@@ -294,7 +317,7 @@ void VariableLength::PrintStatistics() {
             recovered_capacity+=i.second;
         }
     }
-    recovered_capacity = recovered_capacity*1.57/8/1024/1024/1024;
+    recovered_capacity = recovered_capacity*1.57/8/1024/1024; // has devided by 1024*1024 already in case of over flow
     cout<<"recovered_capacity = " << recovered_capacity<<endl;
 
 
