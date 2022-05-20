@@ -49,7 +49,7 @@ private:
     unordered_set<string> all_primers; // all primer names(w/o collisions)
     unordered_map<PrimerID, unordered_set<PrimerID> > primer_confilct_list; // conflict between primers (primers that cannot exist together)
     unordered_map<PrimerID, int > primer_collision_num_;
-    unordered_map<PrimerID, int > primer_capacity_;
+    unordered_map<PrimerID, double > primer_capacity_;
 
     vector<pair<int, PrimerID>> primer_process_order;
     unordered_set<PrimerID> discarded_primers;
