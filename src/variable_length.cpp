@@ -162,6 +162,12 @@ void VariableLength::Cut() {
         primer_confilct_list.erase(*it);
     }
 
+    int ideal_capacity = 1.55*1000000*200/2; //devide by 2 since it's a primer not a primer pair
+    for (auto it : primer_collision_num_){
+        int capacity = ideal_capacity - it.second*4*100; // we are using 64GB, collision num * 4 to scale to 200+GB
+        primer_capacity_.emplace(it.first,capacity);
+    }
+
     if (g_var_len_algorithm==1){
         for (auto it : primer_collision_num_){
             primer_process_order.push_back(make_pair(it.second, it.first));
@@ -173,11 +179,6 @@ void VariableLength::Cut() {
         }
         sort(primer_process_order.begin(), primer_process_order.end(),sortbyfirst_asending);
     } else if (g_var_len_algorithm==3){
-        int ideal_capacity = 1.55*1000000*200;
-        for (auto it : primer_collision_num_){
-            int capacity = ideal_capacity - it.second*4*100; // we are using 64GB, collision num * 4 to scale to 200+GB
-            primer_capacity_.emplace(it.first,capacity);
-        }
         // calculate capacity diff, push to primer_process_order
         for (auto it : primer_capacity_){
             int capacity_diff=it.second;
@@ -189,15 +190,85 @@ void VariableLength::Cut() {
         sort(primer_process_order.begin(), primer_process_order.end(),sortbyfirst_descending);
     }
 
+    //initialize look ahead window
+    unordered_set<PrimerID> look_ahead_window;
 
+    // used to mark the primer that is swapped with its conflict, those primer has been processed already but still stay in primer_process_order
+    unordered_set<PrimerID> swapped;
 
     for (int i = 0; i < primer_process_order.size(); i++) {
-        PrimerID primer_id = primer_process_order[i].second;
+        PrimerID current_primer_id = primer_process_order[i].second;
 
-        if(discarded_primers.find(primer_id) != discarded_primers.end()) {
+        if(discarded_primers.find(current_primer_id) != discarded_primers.end()) {
             continue;
         }
-        unordered_set<PrimerID> &conflicts = primer_confilct_list[primer_id];
+
+        if(swapped.find(current_primer_id) != swapped.end()) {
+            continue;
+        }
+
+
+        if (g_var_len_algorithm==3){
+
+            for (int j = i+1; j <=i+200; ++j) {
+
+                if(discarded_primers.find(current_primer_id) != discarded_primers.end()) {
+                    continue;
+                }
+
+                if(swapped.find(current_primer_id) != swapped.end()) {
+                    continue;
+                }
+
+                look_ahead_window.insert(primer_process_order[j].second);
+            }
+
+            //get current primers' conflicts in the window
+            auto conflicts = primer_confilct_list.find(current_primer_id)->second;
+            for (auto it:look_ahead_window){
+                if (conflicts.find(it)==conflicts.end()){
+                    conflicts.erase(it);
+                }
+            }
+
+            // calculate window capacity diff for current primer
+            int window_capacity_diff_of_current_primer = primer_capacity_.find(current_primer_id)->second;
+            for (auto it:conflicts){
+                window_capacity_diff_of_current_primer -= primer_capacity_.find(it)->second;
+            }
+
+            //only if capacity diff < 0 then swap
+            if (window_capacity_diff_of_current_primer<0){
+                vector<pair<int,PrimerID>> window_capacity_diff_of_conflicts;
+
+                for (auto it:conflicts){
+                    //get conflict primers' conflicts in the window
+                    auto conflicts_of_conflicts = primer_confilct_list.find(it)->second;
+                    for (auto n:look_ahead_window){
+                        if (conflicts_of_conflicts.find(n)==conflicts_of_conflicts.end()){
+                            conflicts_of_conflicts.erase(n);
+                        }
+                    }
+                    //calculate window capacity diff for conflict primer
+                    int window_capacity_diff_of_conflit_primer = primer_capacity_.find(it)->second;
+                    for (auto n:conflicts_of_conflicts){
+                        window_capacity_diff_of_conflit_primer -= primer_capacity_.find(n)->second;
+                    }
+                    window_capacity_diff_of_conflicts.push_back(make_pair(window_capacity_diff_of_conflit_primer,it));
+                }
+
+                sort(window_capacity_diff_of_conflicts.begin(), window_capacity_diff_of_conflicts.end(),sortbyfirst_descending);
+
+                if(window_capacity_diff_of_conflicts.begin()->first > window_capacity_diff_of_current_primer){
+                    //swap currrent primer and the max conflict primer
+                    current_primer_id=window_capacity_diff_of_conflicts.begin()->second;
+                    swapped.insert(window_capacity_diff_of_conflicts.begin()->second);
+                }
+            }
+        }
+
+        // recover current primer = push its conflict to discarded
+        unordered_set<PrimerID> &conflicts = primer_confilct_list[current_primer_id];
 
         for (auto it = conflicts.begin(); it != conflicts.end(); it++){
             discarded_primers.insert(*it);
