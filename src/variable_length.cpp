@@ -131,7 +131,7 @@ void VariableLength::ReadCollisions(string path) {
 
         }
     }
-    
+
     assert(strand_id2name.size() == strand_name2id.size());
     assert(primer_id2name.size() == primer_name2id.size());
     n_strand += strand_id2name.size();
@@ -144,7 +144,14 @@ void VariableLength::Cut() {
         ReadCollisions(all_files[i]);
     }
 
+    for (auto it = discarded_primers.begin(); it != discarded_primers.end(); it++) {
+        primer_confilct_list.erase(*it);
+    }
+
     if (g_var_len_algorithm==1){
+    // self-confict primers should be ruled out from primer_confilct_list
+
+
 
     } else if (g_var_len_algorithm==2){
         for (auto it = primer_confilct_list.begin(); it != primer_confilct_list.end(); it++) {
@@ -153,10 +160,6 @@ void VariableLength::Cut() {
     } else if (g_var_len_algorithm==3){
 
     }
-
-
-
-
 
 
     sort(primer_process_order.begin(), primer_process_order.end());
@@ -182,8 +185,8 @@ void VariableLength::Cut() {
 void VariableLength::PrintStatistics() {
     cout << "n_strand: " << n_strand << endl << flush;
     cout << "n_primer: " << n_primer << endl << flush;
-    int n_recovered = recovered_primers.size();
     int n_discarded = discarded_primers.size();
+    int n_recovered = primer_id2name.size() - n_discarded;
     int n_free = n_primer - n_discarded - n_recovered;
     cout << "n[free, recovered, discarded] = " << n_free << ' ' << n_recovered << ' ' << n_discarded << endl << flush;
     cout << "Available primer ratio before VarLen = " << (double)n_free/n_primer << endl << flush;
