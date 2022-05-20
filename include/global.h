@@ -59,6 +59,7 @@ extern long g_chunk_size;
 extern long g_strand_length;
 extern int g_swap_granularity;
 extern int g_num_bit_per_triplet;
+extern int g_var_len_algorithm;
 int Parse(string cfgfile);
 
 typedef std::uint64_t hash_t;

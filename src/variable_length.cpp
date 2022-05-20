@@ -85,6 +85,12 @@ void VariableLength::ReadCollisions(string path) {
         strand_id2name[strand_id] = strand_name;
         strand_name2id[strand_name] = strand_id;
 
+        if (primer_collision_num_.find(primer_id)==primer_collision_num_.end()){
+            primer_collision_num_.emplace(primer_id,1);
+        } else{
+            primer_collision_num_.find(primer_id)->second++;
+        }
+
         // read collsion position
         for (int i = 0; i < 6; i++) {
             iss >> current_field;
@@ -131,108 +137,6 @@ void VariableLength::ReadCollisions(string path) {
 
         }
     }
-    
-    assert(strand_id2name.size() == strand_name2id.size());
-    assert(primer_id2name.size() == primer_name2id.size());
-    n_strand += strand_id2name.size();
-    n_primer = all_primers.size();
-}
-
-void VariableLength::dropout_ReadCollisions(string path) {
-    cout << "VarLen: Processing " << path << endl;
-    strand_id2name.clear();
-    strand_name2id.clear();
-    primer_id2name.clear();
-    primer_name2id.clear();
-    collision_linear_order.clear();
-
-    ifstream myfile;
-    myfile.open(path);
-    string line;
-
-    srand (time(NULL));
-    while(getline(myfile, line)) {
-
-
-        istringstream iss(line);
-        string current_field;
-        // line example:
-        // primer4	payload1176045	93.750	16	1	0	1	16	55	40	27	25.6
-
-        if (line[0] == '#') {
-            iss >> current_field;
-            iss >> current_field;
-            if (current_field == "Query:") {
-                iss >> current_field;
-                all_primers.insert(current_field);
-            }
-            continue;
-        }
-
-        string primer_name;
-        string strand_name;
-        PrimerID primer_id;
-        StrandID strand_id;
-        iss >> primer_name >> strand_name;
-        primer_id = stoul(primer_name.substr(6));
-        strand_id = stoul(strand_name.substr(7));
-        primer_id2name[primer_id] = primer_name;
-        primer_name2id[primer_name] = primer_id;
-        strand_id2name[strand_id] = strand_name;
-        strand_name2id[strand_name] = strand_id;
-
-
-        if(rand() % 5!=0){
-            continue; // dedup ratio 5:1
-        }
-
-
-        // read collsion position
-        for (int i = 0; i < 6; i++) {
-            iss >> current_field;
-        }
-        iss >> current_field;
-        unsigned int strand_start = stoul(current_field);
-        iss >> current_field;
-        unsigned int strand_end = stoul(current_field);
-        if (strand_start > strand_end) swap(strand_start, strand_end);
-        collision_linear_order.push_back(make_tuple(strand_id, strand_start, strand_end, primer_id));
-    }
-
-    sort(collision_linear_order.begin(), collision_linear_order.end(), CollisionPositionCMP);
-
-    for (int i = 1; i < collision_linear_order.size(); i++) {
-        auto &cur_collision = collision_linear_order[i];
-        StrandID strand_id = get<0>(cur_collision);
-        unsigned int start = get<1>(cur_collision);
-        unsigned int end = get<2>(cur_collision);
-        PrimerID primer_id = get<3>(cur_collision);
-
-        unsigned int cut = start + (end - start) / 2;
-        cut = (int)(cut * 0.1 + 0.5);
-
-        auto &last_collision = collision_linear_order[i-1];
-        StrandID strand_id_last = get<0>(last_collision);
-        if (strand_id_last == strand_id) {
-            unsigned int start_last = get<1>(last_collision);
-            unsigned int end_last = get<2>(last_collision);
-            PrimerID primer_id_last = get<3>(last_collision);
-
-            unsigned int cut_last = start_last + (end_last - start_last)/2;
-            cut_last = (int)(cut_last * 0.1 + 0.5);
-
-            assert(cut_last <= cut);
-            if (IsBlindSpot(cut-cut_last)) {
-                if (primer_id_last == primer_id) {
-                    discarded_primers.insert(primer_id);
-                } else {
-                    primer_confilct_list[primer_id].insert(primer_id_last);
-                    primer_confilct_list[primer_id_last].insert(primer_id);
-                }
-            }
-
-        }
-    }
 
     assert(strand_id2name.size() == strand_name2id.size());
     assert(primer_id2name.size() == primer_name2id.size());
@@ -240,26 +144,54 @@ void VariableLength::dropout_ReadCollisions(string path) {
     n_primer = all_primers.size();
 }
 
+bool sortbyfirst_asending(const pair<int,PrimerID> &a, const pair<int,PrimerID> &b){
+    return a.first<b.first;
+}
+
+bool sortbyfirst_descending(const pair<int,PrimerID> &a, const pair<int,PrimerID> &b){
+    return a.first>b.first;
+}
 
 void VariableLength::Cut() {
-    // whether dropout
-    if (g_dedup==1){
-        for (int i = 0; i < all_files.size(); i++) {
-            dropout_ReadCollisions(all_files[i]);
+    for (int i = 0; i < all_files.size(); i++) {
+        ReadCollisions(all_files[i]);
+    }
+
+    // self-confict primers should be ruled out from primer_confilct_list
+    for (auto it = discarded_primers.begin(); it != discarded_primers.end(); it++) {
+        primer_confilct_list.erase(*it);
+    }
+
+    if (g_var_len_algorithm==1){
+        for (auto it : primer_collision_num_){
+            primer_process_order.push_back(make_pair(it.second, it.first));
         }
-    }
-
-    if (g_dedup==0){
-        for (int i = 0; i < all_files.size(); i++) {
-            ReadCollisions(all_files[i]);
+        sort(primer_process_order.begin(), primer_process_order.end(),sortbyfirst_asending);
+    } else if (g_var_len_algorithm==2){
+        for (auto it = primer_confilct_list.begin(); it != primer_confilct_list.end(); it++) {
+            primer_process_order.push_back(make_pair(it->second.size(), it->first));
         }
+        sort(primer_process_order.begin(), primer_process_order.end(),sortbyfirst_asending);
+    } else if (g_var_len_algorithm==3){
+        int ideal_capacity = 1.55*1000000*200;
+        for (auto it : primer_collision_num_){
+            int capacity = ideal_capacity - it.second*4*100; // we are using 64GB, collision num * 4 to scale to 200+GB
+            primer_capacity_.emplace(it.first,capacity);
+        }
+        // calculate capacity diff, push to primer_process_order
+        for (auto it : primer_capacity_){
+            int capacity_diff=it.second;
+            for (auto conflict_primer : primer_confilct_list[it.first]){
+                capacity_diff -= primer_capacity_[conflict_primer];
+            }
+            primer_process_order.push_back(make_pair(capacity_diff, it.first));
+        }
+        sort(primer_process_order.begin(), primer_process_order.end(),sortbyfirst_descending);
     }
 
 
-    for (auto it = primer_confilct_list.begin(); it != primer_confilct_list.end(); it++) {
-        primer_process_order.push_back(make_pair(it->second.size(), it->first));
-    }
-    sort(primer_process_order.begin(), primer_process_order.end());
+
+
 
     for (int i = 0; i < primer_process_order.size(); i++) {
         PrimerID primer_id = primer_process_order[i].second;
@@ -281,8 +213,8 @@ void VariableLength::Cut() {
 void VariableLength::PrintStatistics() {
     cout << "n_strand: " << n_strand << endl << flush;
     cout << "n_primer: " << n_primer << endl << flush;
-    int n_recovered = recovered_primers.size();
     int n_discarded = discarded_primers.size();
+    int n_recovered = primer_collision_num_.size() - n_discarded;
     int n_free = n_primer - n_discarded - n_recovered;
     cout << "n[free, recovered, discarded] = " << n_free << ' ' << n_recovered << ' ' << n_discarded << endl << flush;
     cout << "Available primer ratio before VarLen = " << (double)n_free/n_primer << endl << flush;
