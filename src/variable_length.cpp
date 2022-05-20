@@ -98,6 +98,7 @@ void VariableLength::ReadCollisions(string path) {
     }
 
     sort(collision_linear_order.begin(), collision_linear_order.end(), CollisionPositionCMP);
+    cout << "collision_linear_order cnt:" << collision_linear_order.size() << endl;
 
     for (int i = 1; i < collision_linear_order.size(); i++) {
         auto &cur_collision = collision_linear_order[i];
@@ -243,6 +244,8 @@ void VariableLength::dropout_ReadCollisions(string path) {
 
 
 void VariableLength::Cut() {
+    
+
     // whether dropout
     if (g_dedup==1){
         for (int i = 0; i < all_files.size(); i++) {
@@ -256,15 +259,23 @@ void VariableLength::Cut() {
         }
     }
 
+    // self-confict primers should be ruled out from primer_confilct_list
+    for (auto it = discarded_primers.begin(); it != discarded_primers.end(); it++) {
+        primer_confilct_list.erase(*it);
+    }
+
 
     for (auto it = primer_confilct_list.begin(); it != primer_confilct_list.end(); it++) {
         primer_process_order.push_back(make_pair(it->second.size(), it->first));
     }
     sort(primer_process_order.begin(), primer_process_order.end());
-
+    cout << "primer_process_order cnt_flag2:" << primer_process_order.size() << endl;
+    cout << "discarded_primers cnt = " << discarded_primers.size() << endl;
+    int cnt = 0;
     for (int i = 0; i < primer_process_order.size(); i++) {
         PrimerID primer_id = primer_process_order[i].second;
         if(discarded_primers.find(primer_id) != discarded_primers.end()) {
+            cnt++;
             continue;
         }
         unordered_set<PrimerID> &conflicts = primer_confilct_list[primer_id];
@@ -273,8 +284,12 @@ void VariableLength::Cut() {
             discarded_primers.insert(*it);
         }
         
-        recovered_primers.insert(primer_id);
+        if (recovered_primers.find(primer_id) != recovered_primers.end()) {
+            cout << "duplicate recover primer" << endl;
+        }
+        recovered_primers.insert(primer_id); //TODO: also the primers with exactly one conflict. Theese primers do not appear in primer_confilct_list
     }
+    cout << "for loop cnt = " << cnt << endl;
 
     PrintStatistics();
 }
@@ -282,8 +297,8 @@ void VariableLength::Cut() {
 void VariableLength::PrintStatistics() {
     cout << "n_strand: " << n_strand << endl << flush;
     cout << "n_primer: " << n_primer << endl << flush;
-    int n_recovered = recovered_primers.size();
     int n_discarded = discarded_primers.size();
+    int n_recovered = primer_id2name.size() - n_discarded;
     int n_free = n_primer - n_discarded - n_recovered;
     cout << "n[free, recovered, discarded] = " << n_free << ' ' << n_recovered << ' ' << n_discarded << endl << flush;
     cout << "Available primer ratio before VarLen = " << (double)n_free/n_primer << endl << flush;
