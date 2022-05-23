@@ -64,6 +64,9 @@ public:
 
     list<string> last_20nt_;
     list<char> last_17nt_;
+    // triplets_in_last_17nt_ can have redundant triplets, so use map<triplet,counter>
+    unordered_map<string,uint8_t> triplets_in_last_17nt_;
+    unordered_map<string,string>  complementary_triplets_table_;
     list<string> NT_triplets_;
     unordered_map<uint8_t,list<string>> three_bits_NT_triplets_candidates_;
 };
