@@ -537,63 +537,34 @@ string DNA_encoder::partial_search_triplets() {
             homo1.push_back(n);   // since n has no homo, as long as
     }
 
+    unordered_map<string,list<string>> concatenate_triplets_of_each_candidates;
     for (auto m:homo1){
         int matches=0;
-        string complement_str1 = complementary_sequence(m);
+        list<string> concatenate_triplets;
 
+        concatenate_triplets.emplace_back(m);
+        //string complement_str1 = complementary_sequence(m);
+        string complement_str1 = complementary_triplets_table_.find(m)->second;
         //str 1
-        auto it = last_17nt_.begin();
-        for (int i = 0; i < 15; ++i) {
-            auto tmp_it = it;
-            if (*tmp_it != complement_str1[0]) {
-                it++;
-                continue;
-            }
-            tmp_it++;
-            if (*tmp_it != complement_str1[1]) {
-                it++;
-                continue;
-            }
-            tmp_it++;
-            if (*tmp_it != complement_str1[2]) {
-                it++;
-                continue;
-            }
+        if (triplets_in_last_17nt_.find(complement_str1)!=triplets_in_last_17nt_.end())
             matches++;
-            break;
-        }
 
 
         //str 2
         string str2;
         str2.insert (0, 1, m[0]);
-        it = last_17nt_.end();
+        auto it = last_17nt_.end();
         it--;
         str2.insert (0, 1, *it);
         it--;
         str2.insert (0, 1, *it);
-        string complement_str2 = complementary_sequence(str2);
+        concatenate_triplets.emplace_back(str2);
 
-        it = last_17nt_.begin();
-        for (int i = 0; i < 15; ++i) {
-            auto tmp_it = it;
-            if (*tmp_it != complement_str2[0]) {
-                it++;
-                continue;
-            }
-            tmp_it++;
-            if (*tmp_it != complement_str2[1]) {
-                it++;
-                continue;
-            }
-            tmp_it++;
-            if (*tmp_it != complement_str2[2]) {
-                it++;
-                continue;
-            }
+        string complement_str2 = complementary_triplets_table_.find(str2)->second;
+        if (triplets_in_last_17nt_.find(complement_str2)!=triplets_in_last_17nt_.end())
             matches++;
-            break;
-        }
+
+
 
 
         //str 3
@@ -603,34 +574,25 @@ string DNA_encoder::partial_search_triplets() {
         it = last_17nt_.end();
         it--;
         str3.insert (0, 1, *it);
-        string complement_str3 = complementary_sequence(str3);
+        concatenate_triplets.emplace_back(str3);
 
-        it = last_17nt_.begin();
-        for (int i = 0; i < 15; ++i) {
-            auto tmp_it = it;
-            if (*tmp_it != complement_str3[0]) {
-                it++;
-                continue;
-            }
-            tmp_it++;
-            if (*tmp_it != complement_str3[1]) {
-                it++;
-                continue;
-            }
-            tmp_it++;
-            if (*tmp_it != complement_str3[2]) {
-                it++;
-                continue;
-            }
+        string complement_str3 = complementary_triplets_table_.find(str3)->second;
+        if (triplets_in_last_17nt_.find(complement_str3)!=triplets_in_last_17nt_.end())
             matches++;
-            break;
-        }
+
 
         //cout<<"triplet "<<m<<" matches "<<matches<<endl;
-        all_triplet_candidates_and_score.push_back(make_pair(matches,m));
+        all_triplet_candidates_and_score.emplace_back(make_pair(matches,m));
+        concatenate_triplets_of_each_candidates.emplace(m,concatenate_triplets);
     }
 
     sort(all_triplet_candidates_and_score.begin(), all_triplet_candidates_and_score.end());
+
+    cout<<"   -----    "<<endl;
+    for (auto a:all_triplet_candidates_and_score){
+        cout<<a.second<<" matches"<<a.first<<endl;
+    }
+
 
     result=all_triplet_candidates_and_score.begin()->second;
     //cout<<"select top "<<rad<<" "<<result<<"   its matches are"<<all_triplet_candidates_and_score[rad].first<<result<<endl;
@@ -640,6 +602,76 @@ string DNA_encoder::partial_search_triplets() {
         last_17nt_.emplace_back(result[i]);
         last_17nt_.erase(last_17nt_.begin());
     }
+
+    //insert new triplets to triplets_in_last_17nt_
+    list<string> concatenate_triplets_of_select_triplets = concatenate_triplets_of_each_candidates.find(result)->second;
+    for (auto s:concatenate_triplets_of_select_triplets) {
+        if (triplets_in_last_17nt_.find(s)==triplets_in_last_17nt_.end())
+            triplets_in_last_17nt_.emplace(s,1);
+        else
+            triplets_in_last_17nt_.find(s)->second++;
+    }
+
+    //delete old triplets from triplets_in_last_17nt_
+    auto it = last_17nt_.begin();
+    string delete_str1, delete_str2, delete_str3;
+    delete_str1.push_back(*it);
+
+    it++;
+    delete_str1.push_back(*it);
+    delete_str2.push_back(*it);
+
+    it++;
+    delete_str1.push_back(*it);
+    delete_str2.push_back(*it);
+    delete_str3.push_back(*it);
+
+    it++;
+    delete_str2.push_back(*it);
+    delete_str3.push_back(*it);
+
+    it++;
+    delete_str3.push_back(*it);
+
+    auto ptr1 = triplets_in_last_17nt_.find(delete_str1);
+    if (ptr1==triplets_in_last_17nt_.end()){
+        cout<<"error in delete old triplets:"<<delete_str1<<" from triplets_in_last_17nt_";
+        cout<<"if not happen at begin, must be sth wrong"<<endl;
+    } else{
+        if (ptr1->second==1)
+            triplets_in_last_17nt_.erase(ptr1);
+        else
+            ptr1->second--;
+    }
+
+
+
+
+    auto ptr2 = triplets_in_last_17nt_.find(delete_str2);
+    if (ptr2==triplets_in_last_17nt_.end()){
+        cout<<"error in delete old triplets:"<<delete_str2<<" from triplets_in_last_17nt_";
+        cout<<"if not happen at begin, must be sth wrong"<<endl;
+    } else{
+        if (ptr2->second==1)
+            triplets_in_last_17nt_.erase(ptr2);
+        else
+            ptr2->second--;
+    }
+
+
+
+
+    auto ptr3 = triplets_in_last_17nt_.find(delete_str3);
+    if (ptr3==triplets_in_last_17nt_.end()){
+        cout<<"error in delete old triplets:"<<delete_str3<<" from triplets_in_last_17nt_";
+        cout<<"if not happen at begin, must be sth wrong"<<endl;
+    } else{
+        if (ptr3->second==1)
+            triplets_in_last_17nt_.erase(ptr3);
+        else
+            ptr3->second--;
+    }
+
     return result;
 }
 
@@ -1055,56 +1087,96 @@ void DNA_encoder::init_heuristic_encoding() {
     three_bits_NT_triplets_candidates_.emplace(0,candidates_row_0);
 
     list<string> candidates_row_1;
-    candidates_row_0.emplace_back("ATG");
-    candidates_row_0.emplace_back("CAT");
-    candidates_row_0.emplace_back("TCG");
-    candidates_row_0.emplace_back("CGA");
-    candidates_row_0.emplace_back("TAT");
+    candidates_row_1.emplace_back("ATG");
+    candidates_row_1.emplace_back("CAT");
+    candidates_row_1.emplace_back("GAC");
+    candidates_row_1.emplace_back("GTC");
+    candidates_row_1.emplace_back("TAT");
     three_bits_NT_triplets_candidates_.emplace(1,candidates_row_1);
 
     list<string> candidates_row_2;
-    candidates_row_0.emplace_back("ATC");
-    candidates_row_0.emplace_back("GAT");
-    candidates_row_0.emplace_back("TGC");
-    candidates_row_0.emplace_back("GCA");
-    candidates_row_0.emplace_back("CGC");
+    candidates_row_2.emplace_back("ACT");
+    candidates_row_2.emplace_back("AGT");
+    candidates_row_2.emplace_back("TGC");
+    candidates_row_2.emplace_back("GCA");
+    candidates_row_2.emplace_back("CGC");
     three_bits_NT_triplets_candidates_.emplace(2,candidates_row_2);
 
     list<string> candidates_row_3;
-    candidates_row_0.emplace_back("ACA");
-    candidates_row_0.emplace_back("TGT");
-    candidates_row_0.emplace_back("AGC");
-    candidates_row_0.emplace_back("GCT");
-    candidates_row_0.emplace_back("GCG");
+    candidates_row_3.emplace_back("TCA");
+    candidates_row_3.emplace_back("TGA");
+    candidates_row_3.emplace_back("ACG");
+    candidates_row_3.emplace_back("CGT");
+    candidates_row_3.emplace_back("GCG");
     three_bits_NT_triplets_candidates_.emplace(3,candidates_row_3);
 
     list<string> candidates_row_4;
-    candidates_row_0.emplace_back("ACT");
-    candidates_row_0.emplace_back("AGT");
-    candidates_row_0.emplace_back("CAC");
-    candidates_row_0.emplace_back("GTG");
+    candidates_row_4.emplace_back("ATC");
+    candidates_row_4.emplace_back("GAT");
+    candidates_row_4.emplace_back("TCG");
+    candidates_row_4.emplace_back("CGA");
     three_bits_NT_triplets_candidates_.emplace(4,candidates_row_4);
 
     list<string> candidates_row_5;
-    candidates_row_0.emplace_back("TCA");
-    candidates_row_0.emplace_back("TGA");
-    candidates_row_0.emplace_back("GAC");
-    candidates_row_0.emplace_back("GTC");
+    candidates_row_5.emplace_back("ACA");
+    candidates_row_5.emplace_back("TGT");
+    candidates_row_5.emplace_back("CAC");
+    candidates_row_5.emplace_back("GTG");
     three_bits_NT_triplets_candidates_.emplace(5,candidates_row_5);
 
     list<string> candidates_row_6;
-    candidates_row_0.emplace_back("TAG");
-    candidates_row_0.emplace_back("CTA");
-    candidates_row_0.emplace_back("ACG");
-    candidates_row_0.emplace_back("CGT");
+    candidates_row_6.emplace_back("TAG");
+    candidates_row_6.emplace_back("CTA");
+    candidates_row_6.emplace_back("AGC");
+    candidates_row_6.emplace_back("GCT");
     three_bits_NT_triplets_candidates_.emplace(6,candidates_row_6);
 
     list<string> candidates_row_7;
-    candidates_row_0.emplace_back("AGA");
-    candidates_row_0.emplace_back("TCT");
-    candidates_row_0.emplace_back("CTC");
-    candidates_row_0.emplace_back("GAG");
+    candidates_row_7.emplace_back("AGA");
+    candidates_row_7.emplace_back("TCT");
+    candidates_row_7.emplace_back("CTC");
+    candidates_row_7.emplace_back("GAG");
     three_bits_NT_triplets_candidates_.emplace(7,candidates_row_7);
+
+    complementary_triplets_table_.emplace("TAC","GTA");
+    complementary_triplets_table_.emplace("GTA","TAC");
+    complementary_triplets_table_.emplace("ATG","CAT");
+    complementary_triplets_table_.emplace("CAT","ATG");
+    complementary_triplets_table_.emplace("ATC","GAT");
+    complementary_triplets_table_.emplace("GAT","ATC");
+    complementary_triplets_table_.emplace("ACA","TGT");
+    complementary_triplets_table_.emplace("TGT","ACA");
+    complementary_triplets_table_.emplace("ACT","AGT");
+    complementary_triplets_table_.emplace("AGT","ACT");
+    complementary_triplets_table_.emplace("TCA","TGA");
+    complementary_triplets_table_.emplace("TGA","TCA");
+    complementary_triplets_table_.emplace("TAG","CTA");
+    complementary_triplets_table_.emplace("CTA","TAG");
+
+
+    complementary_triplets_table_.emplace("AGA","TCT");
+    complementary_triplets_table_.emplace("TCT","AGA");
+    complementary_triplets_table_.emplace("CTG","CAG");
+    complementary_triplets_table_.emplace("CAG","CTG");
+    complementary_triplets_table_.emplace("TCG","CGA");
+    complementary_triplets_table_.emplace("CGA","TCG");
+    complementary_triplets_table_.emplace("TGC","GCA");
+    complementary_triplets_table_.emplace("GCA","TGC");
+    complementary_triplets_table_.emplace("AGC","GCT");
+    complementary_triplets_table_.emplace("GCT","AGC");
+    complementary_triplets_table_.emplace("CAC","GTG");
+    complementary_triplets_table_.emplace("GTG","CAC");
+    complementary_triplets_table_.emplace("GAC","GTC");
+    complementary_triplets_table_.emplace("GTC","GAC");
+    complementary_triplets_table_.emplace("ACG","CGT");
+    complementary_triplets_table_.emplace("CGT","ACG");
+    complementary_triplets_table_.emplace("CTC","GAG");
+    complementary_triplets_table_.emplace("GAG","CTC");
+    complementary_triplets_table_.emplace("ATA","TAT");
+    complementary_triplets_table_.emplace("TAT","ATA");
+    complementary_triplets_table_.emplace("CGC","GCG");
+    complementary_triplets_table_.emplace("GCG","CGC");
+
 }
 
 void DNA_encoder::initial_rotating_encoding_table() {
@@ -1277,7 +1349,7 @@ DNA_encoder::DNA_encoder() {
 
 
     // record all file's path, use to read file & encode it
-    //all_files_ = listFiles(g_data_path, true);
+    all_files_ = listFiles(g_data_path, true);
 
     for(auto n:all_files_){
         cout<<n<<endl;
