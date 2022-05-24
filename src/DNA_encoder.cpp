@@ -588,10 +588,10 @@ string DNA_encoder::partial_search_triplets() {
 
     sort(all_triplet_candidates_and_score.begin(), all_triplet_candidates_and_score.end());
 
-    cout<<"   -----    "<<endl;
+    /*cout<<"   -----    "<<endl;
     for (auto a:all_triplet_candidates_and_score){
         cout<<a.second<<" matches"<<a.first<<endl;
-    }
+    }*/
 
 
     result=all_triplet_candidates_and_score.begin()->second;
