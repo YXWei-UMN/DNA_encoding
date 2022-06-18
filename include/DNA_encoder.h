@@ -69,6 +69,8 @@ public:
     unordered_map<string,string>  complementary_triplets_table_;
     list<string> NT_triplets_;
     unordered_map<uint8_t,list<string>> three_bits_NT_triplets_candidates_;
+    unordered_map<uint8_t,list<string>> two_bits_NT_triplets_candidates_;
+    unordered_map<uint8_t,list<string>> four_bits_NT_triplets_candidates_;
 };
 
 

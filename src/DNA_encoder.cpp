@@ -527,8 +527,18 @@ string DNA_encoder::exhaustive_search_triplets() {
 string DNA_encoder::partial_search_triplets() {
     string result;
     vector<pair<int,string>> all_triplet_candidates_and_score;
-    uint8_t binary=rand()%8;
-    list<string> candidates = three_bits_NT_triplets_candidates_[binary];
+
+    list<string> candidates;
+    if(g_num_bit_per_triplet==2){
+        uint8_t binary=rand()%4;
+        candidates = two_bits_NT_triplets_candidates_[binary];
+    }else if (g_num_bit_per_triplet==3){
+        uint8_t binary=rand()%8;
+        candidates = three_bits_NT_triplets_candidates_[binary];
+    }else if (g_num_bit_per_triplet==4){
+        uint8_t binary=rand()%16;
+        candidates = four_bits_NT_triplets_candidates_[binary];
+    }
 
     list<string> homo1;
     //homo
@@ -1086,6 +1096,16 @@ void DNA_encoder::init_heuristic_encoding() {
     candidates_row_0.emplace_back("ATA");
     three_bits_NT_triplets_candidates_.emplace(0,candidates_row_0);
 
+    list<string> candidates_row_0_4bit;
+    candidates_row_0_4bit.emplace_back("TAC");
+    candidates_row_0_4bit.emplace_back("GTA");
+    four_bits_NT_triplets_candidates_.emplace(0,candidates_row_0_4bit);
+    list<string> candidates_row_1_4bit;
+    candidates_row_1_4bit.emplace_back("CTG");
+    candidates_row_1_4bit.emplace_back("CAG");
+    candidates_row_1_4bit.emplace_back("ATA");
+    four_bits_NT_triplets_candidates_.emplace(1,candidates_row_1_4bit);
+
     list<string> candidates_row_1;
     candidates_row_1.emplace_back("ATG");
     candidates_row_1.emplace_back("CAT");
@@ -1093,6 +1113,21 @@ void DNA_encoder::init_heuristic_encoding() {
     candidates_row_1.emplace_back("GTC");
     candidates_row_1.emplace_back("TAT");
     three_bits_NT_triplets_candidates_.emplace(1,candidates_row_1);
+
+    list<string> candidates_row_2_4bit;
+    candidates_row_2_4bit.emplace_back("ATG");
+    candidates_row_2_4bit.emplace_back("CAT");
+    four_bits_NT_triplets_candidates_.emplace(2,candidates_row_2_4bit);
+    list<string> candidates_row_3_4bit;
+    candidates_row_3_4bit.emplace_back("GAC");
+    candidates_row_3_4bit.emplace_back("GTC");
+    candidates_row_3_4bit.emplace_back("TAT");
+    four_bits_NT_triplets_candidates_.emplace(3,candidates_row_3_4bit);
+
+    list<string> candidates_row_0_2bit;
+    for (auto n:candidates_row_0) candidates_row_0_2bit.push_back(n);
+    for (auto n:candidates_row_1) candidates_row_0_2bit.push_back(n);
+    two_bits_NT_triplets_candidates_.emplace(0,candidates_row_0_2bit);
 
     list<string> candidates_row_2;
     candidates_row_2.emplace_back("ACT");
@@ -1102,6 +1137,16 @@ void DNA_encoder::init_heuristic_encoding() {
     candidates_row_2.emplace_back("CGC");
     three_bits_NT_triplets_candidates_.emplace(2,candidates_row_2);
 
+    list<string> candidates_row_4_4bit;
+    candidates_row_4_4bit.emplace_back("ACT");
+    candidates_row_4_4bit.emplace_back("AGT");
+    four_bits_NT_triplets_candidates_.emplace(4,candidates_row_4_4bit);
+    list<string> candidates_row_5_4bit;
+    candidates_row_5_4bit.emplace_back("TGC");
+    candidates_row_5_4bit.emplace_back("GCA");
+    candidates_row_5_4bit.emplace_back("CGC");
+    four_bits_NT_triplets_candidates_.emplace(5,candidates_row_5_4bit);
+
     list<string> candidates_row_3;
     candidates_row_3.emplace_back("TCA");
     candidates_row_3.emplace_back("TGA");
@@ -1110,12 +1155,36 @@ void DNA_encoder::init_heuristic_encoding() {
     candidates_row_3.emplace_back("GCG");
     three_bits_NT_triplets_candidates_.emplace(3,candidates_row_3);
 
+    list<string> candidates_row_6_4bit;
+    candidates_row_6_4bit.emplace_back("TCA");
+    candidates_row_6_4bit.emplace_back("TGA");
+    four_bits_NT_triplets_candidates_.emplace(6,candidates_row_6_4bit);
+    list<string> candidates_row_7_4bit;
+    candidates_row_7_4bit.emplace_back("ACG");
+    candidates_row_7_4bit.emplace_back("CGT");
+    candidates_row_7_4bit.emplace_back("GCG");
+    four_bits_NT_triplets_candidates_.emplace(7,candidates_row_7_4bit);
+
+    list<string> candidates_row_1_2bit;
+    for (auto n:candidates_row_2) candidates_row_1_2bit.push_back(n);
+    for (auto n:candidates_row_3) candidates_row_1_2bit.push_back(n);
+    two_bits_NT_triplets_candidates_.emplace(1,candidates_row_1_2bit);
+
     list<string> candidates_row_4;
     candidates_row_4.emplace_back("ATC");
     candidates_row_4.emplace_back("GAT");
     candidates_row_4.emplace_back("TCG");
     candidates_row_4.emplace_back("CGA");
     three_bits_NT_triplets_candidates_.emplace(4,candidates_row_4);
+
+    list<string> candidates_row_8_4bit;
+    candidates_row_8_4bit.emplace_back("ATC");
+    candidates_row_8_4bit.emplace_back("GAT");
+    four_bits_NT_triplets_candidates_.emplace(8,candidates_row_8_4bit);
+    list<string> candidates_row_9_4bit;
+    candidates_row_9_4bit.emplace_back("TCG");
+    candidates_row_9_4bit.emplace_back("CGA");
+    four_bits_NT_triplets_candidates_.emplace(9,candidates_row_9_4bit);
 
     list<string> candidates_row_5;
     candidates_row_5.emplace_back("ACA");
@@ -1124,6 +1193,20 @@ void DNA_encoder::init_heuristic_encoding() {
     candidates_row_5.emplace_back("GTG");
     three_bits_NT_triplets_candidates_.emplace(5,candidates_row_5);
 
+    list<string> candidates_row_10_4bit;
+    candidates_row_10_4bit.emplace_back("ACA");
+    candidates_row_10_4bit.emplace_back("TGT");
+    four_bits_NT_triplets_candidates_.emplace(10,candidates_row_10_4bit);
+    list<string> candidates_row_11_4bit;
+    candidates_row_11_4bit.emplace_back("CAC");
+    candidates_row_11_4bit.emplace_back("GTG");
+    four_bits_NT_triplets_candidates_.emplace(11,candidates_row_11_4bit);
+
+    list<string> candidates_row_2_2bit;
+    for (auto n:candidates_row_4) candidates_row_2_2bit.push_back(n);
+    for (auto n:candidates_row_5) candidates_row_2_2bit.push_back(n);
+    two_bits_NT_triplets_candidates_.emplace(2,candidates_row_2_2bit);
+
     list<string> candidates_row_6;
     candidates_row_6.emplace_back("TAG");
     candidates_row_6.emplace_back("CTA");
@@ -1131,12 +1214,35 @@ void DNA_encoder::init_heuristic_encoding() {
     candidates_row_6.emplace_back("GCT");
     three_bits_NT_triplets_candidates_.emplace(6,candidates_row_6);
 
+    list<string> candidates_row_12_4bit;
+    candidates_row_12_4bit.emplace_back("TAG");
+    candidates_row_12_4bit.emplace_back("CTA");
+    four_bits_NT_triplets_candidates_.emplace(12,candidates_row_12_4bit);
+    list<string> candidates_row_13_4bit;
+    candidates_row_13_4bit.emplace_back("AGC");
+    candidates_row_13_4bit.emplace_back("GCT");
+    four_bits_NT_triplets_candidates_.emplace(13,candidates_row_13_4bit);
+
     list<string> candidates_row_7;
     candidates_row_7.emplace_back("AGA");
     candidates_row_7.emplace_back("TCT");
     candidates_row_7.emplace_back("CTC");
     candidates_row_7.emplace_back("GAG");
     three_bits_NT_triplets_candidates_.emplace(7,candidates_row_7);
+
+    list<string> candidates_row_14_4bit;
+    candidates_row_14_4bit.emplace_back("AGA");
+    candidates_row_14_4bit.emplace_back("TCT");
+    four_bits_NT_triplets_candidates_.emplace(14,candidates_row_14_4bit);
+    list<string> candidates_row_15_4bit;
+    candidates_row_15_4bit.emplace_back("CTC");
+    candidates_row_15_4bit.emplace_back("GAG");
+    four_bits_NT_triplets_candidates_.emplace(15,candidates_row_15_4bit);
+
+    list<string> candidates_row_3_2bit;
+    for (auto n:candidates_row_6) candidates_row_3_2bit.push_back(n);
+    for (auto n:candidates_row_7) candidates_row_3_2bit.push_back(n);
+    two_bits_NT_triplets_candidates_.emplace(3,candidates_row_3_2bit);
 
     complementary_triplets_table_.emplace("TAC","GTA");
     complementary_triplets_table_.emplace("GTA","TAC");
