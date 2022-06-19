@@ -1140,11 +1140,11 @@ void DNA_encoder::init_heuristic_encoding() {
     list<string> candidates_row_4_4bit;
     candidates_row_4_4bit.emplace_back("ACT");
     candidates_row_4_4bit.emplace_back("AGT");
+    candidates_row_4_4bit.emplace_back("CGC");
     four_bits_NT_triplets_candidates_.emplace(4,candidates_row_4_4bit);
     list<string> candidates_row_5_4bit;
     candidates_row_5_4bit.emplace_back("TGC");
     candidates_row_5_4bit.emplace_back("GCA");
-    candidates_row_5_4bit.emplace_back("CGC");
     four_bits_NT_triplets_candidates_.emplace(5,candidates_row_5_4bit);
 
     list<string> candidates_row_3;
@@ -1158,11 +1158,11 @@ void DNA_encoder::init_heuristic_encoding() {
     list<string> candidates_row_6_4bit;
     candidates_row_6_4bit.emplace_back("TCA");
     candidates_row_6_4bit.emplace_back("TGA");
+    candidates_row_6_4bit.emplace_back("GCG");
     four_bits_NT_triplets_candidates_.emplace(6,candidates_row_6_4bit);
     list<string> candidates_row_7_4bit;
     candidates_row_7_4bit.emplace_back("ACG");
     candidates_row_7_4bit.emplace_back("CGT");
-    candidates_row_7_4bit.emplace_back("GCG");
     four_bits_NT_triplets_candidates_.emplace(7,candidates_row_7_4bit);
 
     list<string> candidates_row_1_2bit;
