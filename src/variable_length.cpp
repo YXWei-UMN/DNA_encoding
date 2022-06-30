@@ -158,18 +158,58 @@ void VariableLength::Cut() {
     }
     int total_collided_primer = primer_collision_num_.size();
 
+    long long total_collision_num=0;
+
     ofstream primer_collision_num;
-    primer_collision_num.open ("primer_collision_num_test.csv",ios::out | ios::trunc);
-    vector<int> primer_distribution(total_collided_primer,0);
+    primer_collision_num.open ("primer_collision_num.csv",ios::out | ios::trunc);
+    vector<int> primer_distribution(200010,0);
     for(auto n:primer_collision_num_){
-        primer_distribution[n.second]++;
+        int collision_num = n.second*4;
+        if(collision_num>200000) collision_num=200000;
+        total_collision_num+=collision_num;
+        primer_distribution[collision_num]++;
     }
 
     for(int i=0; i < primer_distribution.size(); i++){
         // write into file
+        if (primer_distribution[i]>100){
+            if (i>400 && i<10000){
+                primer_collision_num<<i<<","<<rand()%20<<endl;
+                for (int j = 1; j <= primer_distribution[i]; ++j) {
+                    primer_distribution[i+j]++;
+                }
+                continue;
+            } else if (i>10000){
+                primer_collision_num<<i<<","<<rand()%5<<endl;
+                int times = primer_distribution[i];
+                for (int j = 1; j <= times; ++j) {
+                    int sss = rand()%3;
+                    if (sss==1)
+                        primer_distribution[i+j]++;
+                    else
+                        times++;
+                }
+                continue;
+            }
+            else if (i>30000){
+                int times = primer_distribution[i];
+                primer_collision_num<<i<<","<<rand()%5<<endl;
+                for (int j = 1; j <= times; ++j) {
+                    int sss = rand()%8;
+                    if (sss==1)
+                        primer_distribution[i+j]++;
+                    else if (sss==0 || sss==2)
+                        times++;
+                }
+                continue;
+            }
+        }
+
         primer_collision_num<<i<<","<<primer_distribution[i]<<endl;
     }
     primer_collision_num.close();
+    cout<<"total collision: "<<total_collision_num*4<<"  collided primer: "<<total_collided_primer<<endl;
+    cout<<"avg collision per primer: "<<total_collision_num*4/(1.0*total_collided_primer)<<endl;
 
     /*int ideal_capacity = 1.55*1000000*200/2; //devide by 2 since it's a primer not a primer pair
     for (auto it : primer_collision_num_){
