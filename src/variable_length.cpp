@@ -158,7 +158,20 @@ void VariableLength::Cut() {
     }
     int total_collided_primer = primer_collision_num_.size();
 
-    int ideal_capacity = 1.55*1000000*200/2; //devide by 2 since it's a primer not a primer pair
+    ofstream primer_collision_num;
+    primer_collision_num.open ("primer_collision_num_test.csv",ios::out | ios::trunc);
+    vector<int> primer_distribution(total_collided_primer,0);
+    for(auto n:primer_collision_num_){
+        primer_distribution[n.second]++;
+    }
+
+    for(int i=0; i < primer_distribution.size(); i++){
+        // write into file
+        primer_collision_num<<i<<","<<primer_distribution[i]<<endl;
+    }
+    primer_collision_num.close();
+
+    /*int ideal_capacity = 1.55*1000000*200/2; //devide by 2 since it's a primer not a primer pair
     for (auto it : primer_collision_num_){
         double capacity = ideal_capacity - it.second*4*100; // we are using 64GB, collision num * 4 to scale to 200+GB
         capacity/=1024; // in case overflow
@@ -215,7 +228,7 @@ void VariableLength::Cut() {
         }
     }
 
-    PrintStatistics(total_collided_primer);
+    PrintStatistics(total_collided_primer);*/
 }
 
 void VariableLength::PrintStatistics(int total_collided_primer) {
