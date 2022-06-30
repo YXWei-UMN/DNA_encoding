@@ -198,7 +198,7 @@ void VariableLength::Cut() {
                     int sss = rand()%8;
                     if (sss==1)
                         primer_distribution[i+j]++;
-                    else if (sss==0 || sss==2)
+                    else
                         times++;
                 }
                 continue;
