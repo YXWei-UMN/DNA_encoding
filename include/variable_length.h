@@ -27,7 +27,7 @@ public:
     ~VariableLength() {}
 
     void Cut();
-    void PrintStatistics();
+    void PrintStatistics(int total_collided_primers);
     unordered_set<PrimerID> get_recovered_primers() const{ return recovered_primers;}
     unordered_set<PrimerID> get_discarded_primers() const{ return discarded_primers;}
 

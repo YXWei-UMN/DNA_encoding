@@ -156,8 +156,27 @@ void VariableLength::Cut() {
     for (int i = 0; i < all_files.size(); i++) {
         ReadCollisions(all_files[i]);
     }
+    int total_collided_primer = primer_collision_num_.size();
+    
 
-    int ideal_capacity = 1.55*1000000*200/2; //devide by 2 since it's a primer not a primer pair
+    long long total_collisions=0;
+    ofstream primer_collision_num;
+    primer_collision_num.open ("primer_collision_num_test.csv",ios::out | ios::trunc);
+    vector<int> primer_distribution(100000,0);
+    for(auto n:primer_collision_num_){
+	total_collisions+=n.second;
+	if(n.second>100000) n.second=100000;
+        primer_distribution[n.second]++;
+    }
+
+    for(int i=0; i < primer_distribution.size(); i++){
+        // write into file
+        primer_collision_num<<i<<","<<4*primer_distribution[i]<<endl;
+    }
+    primer_collision_num.close();
+	cout<<"avg collision per primer: "<<total_collisions*4/(1.0*total_collided_primer)<<endl;
+
+    /*int ideal_capacity = 1.55*1000000*200/2; //devide by 2 since it's a primer not a primer pair
     for (auto it : primer_collision_num_){
         double capacity = ideal_capacity - it.second*4*100; // we are using 64GB, collision num * 4 to scale to 200+GB
         capacity/=1024; // in case overflow
@@ -199,95 +218,11 @@ void VariableLength::Cut() {
         sort(primer_process_order.begin(), primer_process_order.end(),sortbyfirst_descending);
     }
 
-    //initialize look ahead window
-    unordered_set<PrimerID> look_ahead_window;
-
-    // used to mark the primer that is swapped with its conflict, those primer has been processed already but still stay in primer_process_order
-    unordered_set<PrimerID> swapped;
-
     for (int i = 0; i < primer_process_order.size(); i++) {
         PrimerID current_primer_id = primer_process_order[i].second;
 
         if(discarded_primers.find(current_primer_id) != discarded_primers.end()) {
             continue;
-        }
-
-        if(swapped.find(current_primer_id) != swapped.end()) {
-            continue;
-        }
-
-        look_ahead_window.clear();
-
-        if (g_var_len_algorithm==3){
-
-            int j=i+1;
-            int count=0;
-            while (count<=200) {
-                if (j>=primer_process_order.size()) break;
-
-                if(discarded_primers.find(primer_process_order[j].second) != discarded_primers.end()) {
-                    j++;
-                    continue;
-                }
-
-                if(swapped.find(primer_process_order[j].second) != swapped.end()) {
-                    j++;
-                    continue;
-                }
-
-                look_ahead_window.insert(primer_process_order[j].second);
-                j++;
-                count++;
-            }
-            //get current primers' conflicts in the window
-            auto conflicts = primer_confilct_list.find(current_primer_id)->second;
-            unordered_set<PrimerID> window_conflicts;
-            //cout<<"before "<<conflicts.size()<<endl;
-            for (auto it:look_ahead_window){
-                if (conflicts.find(it)!=conflicts.end()){
-                    window_conflicts.insert(it);
-                }
-            }
-            //cout<<"after "<<window_conflicts.size()<<endl;
-
-            // calculate window capacity diff for current primer
-            int window_capacity_diff_of_current_primer = primer_capacity_.find(current_primer_id)->second;
-            //cout<<"primer "<<current_primer_id<<" window capacity diff(1):"<<window_capacity_diff_of_current_primer<<endl;
-            for (auto it:window_conflicts){
-                window_capacity_diff_of_current_primer -= primer_capacity_.find(it)->second;
-            }
-            //cout<<"primer "<<current_primer_id<<" window capacity diff(2):"<<window_capacity_diff_of_current_primer<<endl;
-
-            //only if capacity diff < 0 then swap
-            if (window_capacity_diff_of_current_primer<0){
-                vector<pair<int,PrimerID>> window_capacity_diff_of_window_conflicts;
-
-                for (auto it:window_conflicts){
-                    //get conflict primers' conflicts in the window
-                    auto conflicts_of_window_conflicts = primer_confilct_list.find(it)->second;
-                    unordered_set<PrimerID> window_conflicts_of_window_conflicts;
-                    for (auto n:look_ahead_window){
-                        if (conflicts_of_window_conflicts.find(n)!=conflicts_of_window_conflicts.end()){
-                            window_conflicts_of_window_conflicts.insert(n);
-                        }
-                    }
-                    //calculate window capacity diff for conflict primer
-                    int window_capacity_diff_of_conflit_primer = primer_capacity_.find(it)->second;
-                    for (auto n:window_conflicts_of_window_conflicts){
-                        window_capacity_diff_of_conflit_primer -= primer_capacity_.find(n)->second;
-                    }
-                    window_capacity_diff_of_window_conflicts.push_back(make_pair(window_capacity_diff_of_conflit_primer,it));
-                }
-
-                sort(window_capacity_diff_of_window_conflicts.begin(), window_capacity_diff_of_window_conflicts.end(),sortbyfirst_descending);
-
-                if(window_capacity_diff_of_window_conflicts.begin()->first > window_capacity_diff_of_current_primer){
-                    //cout<<"and swap with primer "<<window_capacity_diff_of_window_conflicts.begin()->second<<"  capacity_diff:"<<window_capacity_diff_of_window_conflicts.begin()->first<<endl;
-                    //swap currrent primer and the max conflict primer
-                    current_primer_id=window_capacity_diff_of_window_conflicts.begin()->second;
-                    swapped.insert(window_capacity_diff_of_window_conflicts.begin()->second);
-                }
-            }
         }
 
         // recover current primer = push its conflict to discarded
@@ -298,14 +233,14 @@ void VariableLength::Cut() {
         }
     }
 
-    PrintStatistics();
+    PrintStatistics(total_collided_primer);*/
 }
 
-void VariableLength::PrintStatistics() {
+void VariableLength::PrintStatistics(int total_collided_primer) {
     cout << "n_strand: " << n_strand << endl << flush;
     cout << "n_primer: " << n_primer << endl << flush;
     int n_discarded = discarded_primers.size();
-    int n_recovered = primer_collision_num_.size() - n_discarded;
+    int n_recovered = total_collided_primer - n_discarded;
     int n_free = n_primer - n_discarded - n_recovered;
     cout << "n[free, recovered, discarded] = " << n_free << ' ' << n_recovered << ' ' << n_discarded << endl << flush;
     cout << "Available primer ratio before VarLen = " << (double)n_free/n_primer << endl << flush;
