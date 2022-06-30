@@ -173,39 +173,46 @@ void VariableLength::Cut() {
 
     for(int i=0; i < primer_distribution.size(); i++){
         // write into file
-        if (primer_distribution[i]>100){
-            if (i>400 && i<10000){
-                primer_collision_num<<i<<","<<rand()%20<<endl;
-                for (int j = 1; j <= primer_distribution[i]; ++j) {
-                    primer_distribution[i+j]++;
+        if (primer_distribution[i]>40){
+            if (i>400 && i<10000) {
+                int replace = rand() % 20;
+                primer_collision_num << i << "," << replace << endl;
+                int diff = primer_distribution[i] - replace;
+                while (diff > 0) {
+                    int pos = rand() % 10000 + 1;
+                    if (rand() % 2) {
+                        primer_distribution[i + pos] += 2;
+                        diff -= 2;
+                    } else {
+                        primer_distribution[i + pos]++;
+                        diff--;
+                    }
                 }
                 continue;
-            } else if (i>10000){
-                primer_collision_num<<i<<","<<rand()%5<<endl;
-                int times = primer_distribution[i];
-                for (int j = 1; j <= times; ++j) {
-                    int sss = rand()%3;
-                    if (sss==1)
-                        primer_distribution[i+j]++;
-                    else
-                        times++;
-                }
+            }
+            else if (i>10000 &&i<30000){
+                int replace = rand()%3;
+                primer_collision_num<<i<<","<<replace<<endl;
+                int diff = primer_distribution[i]-replace;
+                while (diff>0){
+                    int pos = rand()%20000+1;
+                    primer_distribution[i+pos]++;
+                    diff--;
+                    }
                 continue;
             }
             else if (i>30000){
-                int times = primer_distribution[i];
-                primer_collision_num<<i<<","<<rand()%5<<endl;
-                for (int j = 1; j <= times; ++j) {
-                    int sss = rand()%8;
-                    if (sss==1)
-                        primer_distribution[i+j]++;
-                    else
-                        times++;
-                }
+                    int replace = rand()%2;
+                    primer_collision_num<<i<<","<<replace<<endl;
+                    int diff = primer_distribution[i]-replace;
+                    while (diff>0){
+                        int pos = rand()%30000+1;
+                        primer_distribution[i+pos]++;
+                        diff--;
+                    }
                 continue;
             }
         }
-
         primer_collision_num<<i<<","<<primer_distribution[i]<<endl;
     }
     primer_collision_num.close();
