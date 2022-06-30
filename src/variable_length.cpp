@@ -222,7 +222,7 @@ void VariableLength::Cut() {
 
             int j=i+1;
             int count=0;
-            while (count<=10000) {
+            while (count<=200) {
                 if (j>=primer_process_order.size()) break;
 
                 if(discarded_primers.find(primer_process_order[j].second) != discarded_primers.end()) {
