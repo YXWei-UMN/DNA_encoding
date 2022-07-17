@@ -49,6 +49,7 @@ public:
     string prefix_encoding(string digital_data);
     string heuristic_encoding(string digital_data);
     string partial_search_triplets();
+    string partial_search_complementary_first();
     string exhaustive_search_triplets();
     string complementary_sequence(string str);
     void randomize_XOR(string& digital_data);
@@ -71,6 +72,7 @@ public:
     unordered_map<uint8_t,list<string>> three_bits_NT_triplets_candidates_;
     unordered_map<uint8_t,list<string>> two_bits_NT_triplets_candidates_;
     unordered_map<uint8_t,list<string>> four_bits_NT_triplets_candidates_;
+    unordered_map<uint8_t,list<string>> complementary_first_triplets_candidates_;
 };
 
 
