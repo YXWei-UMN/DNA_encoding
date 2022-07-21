@@ -9,10 +9,12 @@ using namespace std;
 const int MINN = 100;
 const int MAXN = 200;
 
-int min_blind_spot = 296;
-int min_uncovered = 187;
+int min_blind_spot = 450;
+int min_uncovered = 500;
 
-int len[4] = {100, 110, 132, 200};
+int len[4] = {150, 160, 190, 200};
+int cnt = 0;
+
 
 int calc_blind_spot() {
   vector<int> com(len, len+4);
@@ -34,7 +36,7 @@ int calc_blind_spot() {
     sort(com.begin(), com.end());
   }
 
-  for (int i = min_blind_spot; i <= min_blind_spot+200; i++) {
+  for (int i = min_blind_spot; i <= min_blind_spot+250; i++) {
     bool found = false;
     for (int j = i - 12; j <= i; j++) {
       if (s.find(j)!=s.end()){
@@ -62,18 +64,17 @@ int calc_blind_spot() {
 
     if (com[i] - com[i-1] > 12) {
       cur_uncovered += com[i] - com[i-1] -12;
-      if (cur_uncovered > min_uncovered) return -1;
       contiguous_start = com[i];
       if (contiguous_start > min_blind_spot) return -1;
     } else {
       int contiguous_length = com[i] - contiguous_start + 1;
       if (contiguous_length >= 200) {
-        if (cur_uncovered <= min_uncovered || contiguous_start <= min_blind_spot){
+        if (contiguous_start <= min_blind_spot){
           min_blind_spot = min(min_blind_spot, contiguous_start);
-          min_uncovered = min(min_blind_spot, cur_uncovered);
-          cout << "[blind_spot, uncovered] = " << "[" << contiguous_start << "," << cur_uncovered << "]\n";
-          // for (int i = 0; i < 4; i++) cout << com[i] << " "; cout << endl;
-          for (auto i = 0; i < com.size() && i < 20; i++) cout << com[i] << " "; cout << endl;
+          min_uncovered = min(min_uncovered, cur_uncovered);
+          cout << "[" <<  (++cnt) << "]\t[blind_spot, uncovered] = " << "[" << contiguous_start << "," << cur_uncovered << "] 4-choices = ";
+          for (int i = 0; i < 4; i++) cout << com[i] << " "; cout << endl;
+          // for (auto i = 0; i < com.size() && i < 20; i++) cout << com[i] << " "; cout << endl;
         }
         return 1;
       }
@@ -98,10 +99,10 @@ void dfs(int step = 0) {
 }
 
 int main() {
-  for (int i = 100; i + 4 < MAXN; i++) {
-    if (i % 20 == 0) {
-      cout << "i = " << i << "[" << min_blind_spot << "," << min_uncovered << "]\n";
-    }
+  for (int i = 150; i + 4 < MAXN; i++) {
+    // if (i % 20 == 0) {
+    //   cout << "i = " << i << "[" << min_blind_spot << "," << min_uncovered << "]\n";
+    // }
     len[0] = i;
     dfs(1);
   }
