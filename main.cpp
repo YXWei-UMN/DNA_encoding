@@ -34,7 +34,7 @@ int main(int argc, char** argv) {
         return -1;
     }
 
-    if (g_program==1){ // encoding
+    if (g_program==1 || g_program==5){ // encoding
         DNA_encoder dnaEncoder;
     }
     else if (g_program == 2){ // transform selection

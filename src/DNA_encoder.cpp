@@ -13,42 +13,89 @@
 
 
 string DNA_encoder::Church_encoding(string digital_data) {
+    while (digital_data.size() % 30 != 0){
+        digital_data = digital_data + '\0';
+    }
+    //cout << "digital_data.size() = " << digital_data.size() << endl;
+
+    // step 1: apply 2 parity bytes on each 30-bytes block
+    const int MSG_LENGTH = 30;
+    const int ECC_LENGTH = 2;
+    const int ENCODED_LENGTH = MSG_LENGTH + ECC_LENGTH;
+    RS::ReedSolomon<MSG_LENGTH, ECC_LENGTH> rs;
+
+    int n_rs_unit = digital_data.size() / MSG_LENGTH;
+    //cout << "n_rs_unit = " << n_rs_unit << endl;
+    //cout << "encoded_unit_length = " << ENCODED_LENGTH * n_rs_unit << endl;
+    char rs_result[ENCODED_LENGTH * n_rs_unit];
+    for (int i = 0, j = 0; i < digital_data.size(); i += MSG_LENGTH, j += ENCODED_LENGTH) {
+        char message[MSG_LENGTH+1];
+        message[MSG_LENGTH] = '\0';
+        memcpy(message, digital_data.c_str()+i, MSG_LENGTH);
+        // cout << "message = " << message << endl;
+        char cur_encoded[ENCODED_LENGTH+1];
+        cur_encoded[ENCODED_LENGTH] = '\0';
+        rs.Encode(message, cur_encoded);
+        // cout << "encoded message = " << cur_encoded << endl;
+        // cout << "encoded length = " << strlen(cur_encoded) << endl;
+        memcpy(rs_result + j, cur_encoded, ENCODED_LENGTH);
+    }
+
+
     string result;
     string last_three="ATC";
-    string at[2]={"A","T"};
-    string cg[2]={"C","G"};
-    for (std::size_t i = 0; i < digital_data.size(); i++)
+    int overall_gc=0;
+    // 0 - A/C  1- T/G
+    for (std::size_t i = 0; i < sizeof(rs_result); i++)
     {
         //cover from binary to decimal
-        bitset<8> bits(digital_data.c_str()[i]);
+        bitset<8> bits(rs_result[i]);
         for (int j = 0; j < 8; j++) {
             if (bits[j]==0){
                 if (last_three[0]=='A' && last_three[1]=='A' && last_three[2]=='A'){
-                    result+="T";
+                    result+="C";
                     last_three.erase(0,1);
-                    last_three+="T";
-                } else if(last_three[0]=='T' && last_three[1]=='T' && last_three[2]=='T'){
+                    last_three+="C";
+                    overall_gc++;
+                } else if(last_three[0]=='C' && last_three[1]=='C' && last_three[2]=='C'){
                     result+="A";
                     last_three.erase(0,1);
                     last_three+="A";
+                    overall_gc--;
                 } else{
-                    string str = at[rand()%2];
+                    string str;
+                    if (overall_gc>=0){
+                        str='A';
+                        overall_gc--;
+                    } else{
+                        str='C';
+                        overall_gc++;
+                    }
                     last_three.erase(0,1);
                     last_three+=str;
                     result+=str;
                 }
             }
             else if (bits[j]==1){
-                if (last_three[0]=='C' && last_three[1]=='C' && last_three[2]=='C'){
+                if (last_three[0]=='T' && last_three[1]=='T' && last_three[2]=='T'){
                     result+="G";
                     last_three.erase(0,1);
                     last_three+="G";
+                    overall_gc++;
                 } else if(last_three[0]=='G' && last_three[1]=='G' && last_three[2]=='G'){
-                    result+="C";
+                    result+="T";
                     last_three.erase(0,1);
-                    last_three+="C";
+                    last_three+="T";
+                    overall_gc--;
                 } else{
-                    string str = cg[rand()%2];
+                    string str;
+                    if (overall_gc>=0){
+                        str='T';
+                        overall_gc--;
+                    } else{
+                        str='G';
+                        overall_gc++;
+                    }
                     last_three.erase(0,1);
                     last_three+=str;
                     result+=str;
@@ -106,78 +153,17 @@ string DNA_encoder::FEC_encoding(string digital_data) {
     }
     return result;
 }
-string DNA_encoder::RS_2bits_rotation(string digital_data){
-    // step 0: padding to a multiple of 3
-    //cout << "digital_data.size() = " << digital_data.size() << endl;
-    while (digital_data.size() % 30 != 0){
-        digital_data = digital_data + '\0';
-    }
-    //cout << "digital_data.size() = " << digital_data.size() << endl;
 
-    // step 1: apply RS encoding on each 30-bytes block
-    const int MSG_LENGTH = 30;
-    const int ECC_LENGTH = 6;
-    const int ENCODED_LENGTH = MSG_LENGTH + ECC_LENGTH;
-    RS::ReedSolomon<MSG_LENGTH, ECC_LENGTH> rs;
 
-    int n_rs_unit = digital_data.size() / MSG_LENGTH;
-    //cout << "n_rs_unit = " << n_rs_unit << endl;
-    //cout << "encoded_unit_length = " << ENCODED_LENGTH * n_rs_unit << endl;
-    char rs_result[ENCODED_LENGTH * n_rs_unit];
-    for (int i = 0, j = 0; i < digital_data.size(); i += MSG_LENGTH, j += ENCODED_LENGTH) {
-        char message[MSG_LENGTH+1];
-        message[MSG_LENGTH] = '\0';
-        memcpy(message, digital_data.c_str()+i, MSG_LENGTH);
-        // cout << "message = " << message << endl;
-        char cur_encoded[ENCODED_LENGTH+1];
-        cur_encoded[ENCODED_LENGTH] = '\0';
-        rs.Encode(message, cur_encoded);
-        // cout << "encoded message = " << cur_encoded << endl;
-        // cout << "encoded length = " << strlen(cur_encoded) << endl;
-        memcpy(rs_result + j, cur_encoded, ENCODED_LENGTH);
-    }
-
-//rotation code
-    string result;
-    for (std::size_t i = 0; i < sizeof(rs_result); i++)
-    {
-        bitset<8> bits(rs_result[i]);
-        for (int j = 0; j < 8; j+=2) {
-            if (bits[j]==0){
-                if (bits[j+1]==0) {
-                    last_bit=rotating_encoding_table_[0][last_bit];
-                    result+=last_bit;
-                }
-                else if (bits[j+1]==1) {
-                    last_bit=rotating_encoding_table_[1][last_bit];
-                    result+=last_bit;
-                }
-            }
-            else if (bits[j]==1){
-                if (bits[j+1]==0) {
-                    last_bit=rotating_encoding_table_[2][last_bit];
-                    result+=last_bit;
-                }
-                else if (bits[j+1]==1) {
-                    last_bit=rotating_encoding_table_[3][last_bit];
-                    result+=last_bit;
-                }
-            }
-        }
-    }
-    return result;
-}
 string DNA_encoder::RS_rotation(string digital_data) {
-    // step 0: padding to a multiple of 3
-    //cout << "digital_data.size() = " << digital_data.size() << endl;
     while (digital_data.size() % 30 != 0){
         digital_data = digital_data + '\0';
     }
     //cout << "digital_data.size() = " << digital_data.size() << endl;
 
-    // step 1: apply RS encoding on each 30-bytes block
+    // step 1: apply 2 parity bytes on each 30-bytes block
     const int MSG_LENGTH = 30;
-    const int ECC_LENGTH = 6;
+    const int ECC_LENGTH = 2;
     const int ENCODED_LENGTH = MSG_LENGTH + ECC_LENGTH;
     RS::ReedSolomon<MSG_LENGTH, ECC_LENGTH> rs;
 
@@ -198,7 +184,6 @@ string DNA_encoder::RS_rotation(string digital_data) {
         memcpy(rs_result + j, cur_encoded, ENCODED_LENGTH);
     }
 
-//rotation code
     string result;
     for (std::size_t i = 0; i < sizeof(rs_result); i+=2)
     {
@@ -220,16 +205,14 @@ string DNA_encoder::RS_rotation(string digital_data) {
 }
 
 string DNA_encoder::RS_GF47(string digital_data) {
-    // step 0: padding to a multiple of 3
-    //cout << "digital_data.size() = " << digital_data.size() << endl;
     while (digital_data.size() % 30 != 0){
         digital_data = digital_data + '\0';
     }
     //cout << "digital_data.size() = " << digital_data.size() << endl;
 
-    // step 1: apply RS encoding on each 30-bytes block
+    // step 1: apply 2 parity bytes on each 30-bytes block
     const int MSG_LENGTH = 30;
-    const int ECC_LENGTH = 6;
+    const int ECC_LENGTH = 2;
     const int ENCODED_LENGTH = MSG_LENGTH + ECC_LENGTH;
     RS::ReedSolomon<MSG_LENGTH, ECC_LENGTH> rs;
 
@@ -250,16 +233,13 @@ string DNA_encoder::RS_GF47(string digital_data) {
         memcpy(rs_result + j, cur_encoded, ENCODED_LENGTH);
     }
 
-
-    // step 2: apply mapping from encoded bytes to nt
-    int total_rs_len = ENCODED_LENGTH * n_rs_unit;
-    int result_len = total_rs_len / 2 * 3 * 3; // 2 -> two 256-base number to use; 3 -> three 47-base number generated; 3 -> three nt for each 47-base number
+    int result_len = sizeof(rs_result) / 2 * 3 * 3; // 2 -> two 256-base number to use; 3 -> three 47-base number generated; 3 -> three nt for each 47-base number
     //cout << "result_len = " << result_len << endl;
     char result_cstring[result_len+1];
     result_cstring[result_len] = '\0';
 
     int j = 0;
-    for (int i = 0; i < total_rs_len; i += 2) {
+    for (int i = 0; i < sizeof(rs_result); i += 2) {
         // convert from 256^2 to 47^3
         unsigned int middle_num = (((unsigned int)rs_result[i])&0xff) * 256 + (((unsigned int)rs_result[i+1])&0xff);
         // cout << "l r m = " << hex << (unsigned int)(char)(rs_result[i]) << '\t' << (unsigned int)(rs_result[i+1]) << '\t' << middle_num << endl << flush;
@@ -272,81 +252,14 @@ string DNA_encoder::RS_GF47(string digital_data) {
         middle_num /= 47;
         assert(middle_num == 0);
 
-        // mapping to nt
         for (int k1 = 0; k1 < 3; k1++) {
             for (int k2 = 0; k2 < 3; k2++) {
-                // cout << j << ' ' << base47_num[k1] << ' ' << endl;;
                 result_cstring[j++] = RS_table[base47_num[k1]][k2];
-                //cout << j-1 << ' ' << RS_table[base47_num[k1]][k2] << endl;
             }
         }
-
     }
     assert(j == result_len);
-
     string result(result_cstring);
-    return result;
-}
-
-string DNA_encoder::RS_GF25(string digital_data) {
-    // step 0: padding to a multiple of 3
-    //cout << "digital_data.size() = " << digital_data.size() << endl;
-    while (digital_data.size() % 30 != 0){
-        digital_data = digital_data + '\0';
-    }
-    //cout << "digital_data.size() = " << digital_data.size() << endl;
-
-    // step 1: apply RS encoding on each 30-bytes block
-    const int MSG_LENGTH = 30;
-    const int ECC_LENGTH = 6;
-    const int ENCODED_LENGTH = MSG_LENGTH + ECC_LENGTH;
-    RS::ReedSolomon<MSG_LENGTH, ECC_LENGTH> rs;
-
-    int n_rs_unit = digital_data.size() / MSG_LENGTH;
-    //cout << "n_rs_unit = " << n_rs_unit << endl;
-    //cout << "encoded_unit_length = " << ENCODED_LENGTH * n_rs_unit << endl;
-    char rs_result[ENCODED_LENGTH * n_rs_unit];
-    for (int i = 0, j = 0; i < digital_data.size(); i += MSG_LENGTH, j += ENCODED_LENGTH) {
-        char message[MSG_LENGTH+1];
-        message[MSG_LENGTH] = '\0';
-        memcpy(message, digital_data.c_str()+i, MSG_LENGTH);
-        // cout << "message = " << message << endl;
-        char cur_encoded[ENCODED_LENGTH+1];
-        cur_encoded[ENCODED_LENGTH] = '\0';
-        rs.Encode(message, cur_encoded);
-        // cout << "encoded message = " << cur_encoded << endl;
-        // cout << "encoded length = " << strlen(cur_encoded) << endl;
-        memcpy(rs_result + j, cur_encoded, ENCODED_LENGTH);
-    }
-
-
-    // step 2: apply mapping from encoded bytes to nt
-    // convert from 2^8 to 24^2
-    int total_rs_len = ENCODED_LENGTH * n_rs_unit;
-    vector<char> result_cstring;
-
-    for (int i = 0; i < total_rs_len; i++) {
-
-        unsigned int middle_num = (((unsigned int)rs_result[i+1])&0xff);
-        // cout << "l r m = " << hex << (unsigned int)(char)(rs_result[i]) << '\t' << (unsigned int)(rs_result[i+1]) << '\t' << middle_num << endl << flush;
-        unsigned int base24_num[2];
-        base24_num[1] = middle_num % 25;
-        middle_num /= 25;
-        base24_num[0] = middle_num % 25;
-        middle_num /= 25;
-        assert(middle_num == 0);
-
-        // mapping to nt
-        for (int k1 = 0; k1 < 2; k1++) {
-            for (int k2 = 0; k2 < 3; k2++) {
-                // cout << j << ' ' << base47_num[k1] << ' ' << endl;;
-                result_cstring.push_back(RS_table[base24_num[k1]][k2]);
-                //cout << j-1 << ' ' << RS_table[base47_num[k1]][k2] << endl;
-            }
-        }
-    }
-
-    string result(result_cstring.begin(),result_cstring.end());
     return result;
 }
 
@@ -405,116 +318,133 @@ string DNA_encoder::complementary_sequence(string str) {
     return complementary_str;
 }
 
-string DNA_encoder::exhaustive_search_triplets() {
+string DNA_encoder::exhaustive_search_triplets(int bits_triplet) {
     string result;
-    vector<pair<int,string>> all_triplet_candidates_and_score;
+    vector<pair<double,string>> all_triplet_candidates_and_score;
 
 
     list<string> homo1;
-    //homo
+    //triplets that has no homo with the last nt
     for (auto n:NT_triplets_){
         if (last_17nt_.back()!=n[0])
-            homo1.push_back(n);   // since n has no homo, as long as
+            homo1.push_back(n);
+    }
+
+    int GC=0;
+    for (auto s:last_17nt_){
+        if (s=='G' || s=='C') GC++;
     }
 
     for (auto m:homo1){
-        int matches=0;
-        string complement_str1 = complementary_sequence(m);
+        double matches=0;
+        string complementary_sequence = complementary_triplets_table_.find(m)->second;
+        auto last = last_17nt_.end();
+        last--;
+        if (*last=='A')  complementary_sequence.insert (0, 1, 'T');
+        else if (*last=='T') complementary_sequence.insert (0, 1, 'A');
+        else if (*last=='C') complementary_sequence.insert (0, 1, 'G');
+        else if (*last=='G') complementary_sequence.insert (0, 1, 'C');
+        last--;
+        if (*last=='A')  complementary_sequence.insert (0, 1, 'T');
+        else if (*last=='T') complementary_sequence.insert (0, 1, 'A');
+        else if (*last=='C') complementary_sequence.insert (0, 1, 'G');
+        else if (*last=='G') complementary_sequence.insert (0, 1, 'C');
+        // complementary_sequence of (last two base + current triplet)
 
-        //str 1
+
+        //start from first base of complementary_sequence
         auto it = last_17nt_.begin();
-        for (int i = 0; i < 15; ++i) {
+        for (int i = 0; i < 14; ++i) {
             auto tmp_it = it;
-            if (*tmp_it != complement_str1[0]) {
+            if (*tmp_it != complementary_sequence[0]) {
                 it++;
                 continue;
             }
             tmp_it++;
-            if (*tmp_it != complement_str1[1]) {
+            if (*tmp_it != complementary_sequence[1]) {
                 it++;
                 continue;
             }
             tmp_it++;
-            if (*tmp_it != complement_str1[2]) {
+            if (*tmp_it != complementary_sequence[2]) {
                 it++;
                 continue;
             }
-            matches++;
+            matches+=3;
+            //extend
+            tmp_it++;
+            if (*tmp_it != complementary_sequence[3]) {
+                it++;
+                continue;
+            }
+            matches+=4;
             break;
         }
 
 
-        //str 2
-        string str2;
-        str2.insert (0, 1, m[0]);
-        it = last_17nt_.end();
-        it--;
-        str2.insert (0, 1, *it);
-        it--;
-        str2.insert (0, 1, *it);
-        string complement_str2 = complementary_sequence(str2);
-
+        //start from 2nd base of complementary_sequence
         it = last_17nt_.begin();
-        for (int i = 0; i < 15; ++i) {
+        for (int i = 0; i < 14; ++i) {
             auto tmp_it = it;
-            if (*tmp_it != complement_str2[0]) {
+            if (*tmp_it != complementary_sequence[1]) {
                 it++;
                 continue;
             }
             tmp_it++;
-            if (*tmp_it != complement_str2[1]) {
+            if (*tmp_it != complementary_sequence[2]) {
                 it++;
                 continue;
             }
             tmp_it++;
-            if (*tmp_it != complement_str2[2]) {
+            if (*tmp_it != complementary_sequence[3]) {
                 it++;
                 continue;
             }
-            matches++;
+            matches+=3;
+            //extend
+            tmp_it++;
+            if (*tmp_it != complementary_sequence[4]) {
+                it++;
+                continue;
+            }
+            matches+=4;
             break;
         }
 
-
-        //str 3
-        string str3;
-        str3.insert (0, 1, m[1]);
-        str3.insert (0, 1, m[0]);
-        it = last_17nt_.end();
-        it--;
-        str3.insert (0, 1, *it);
-        string complement_str3 = complementary_sequence(str3);
-
+        //start from 3nd base of complementary_sequence (the first base of the triplet, only 3 bases remain)
         it = last_17nt_.begin();
-        for (int i = 0; i < 15; ++i) {
+        for (int i = 0; i < 14; ++i) {
             auto tmp_it = it;
-            if (*tmp_it != complement_str3[0]) {
+            if (*tmp_it != complementary_sequence[2]) {
                 it++;
                 continue;
             }
             tmp_it++;
-            if (*tmp_it != complement_str3[1]) {
+            if (*tmp_it != complementary_sequence[3]) {
                 it++;
                 continue;
             }
             tmp_it++;
-            if (*tmp_it != complement_str3[2]) {
+            if (*tmp_it != complementary_sequence[4]) {
                 it++;
                 continue;
             }
-            matches++;
+            matches+=3;
             break;
         }
 
-        //cout<<"triplet "<<m<<" matches "<<matches<<endl;
+        // compare GC to further tune each candidates's weight (but in finer grain)
+        int GC_in_m=0;
+        for (auto l:m){
+            if (l=='G' || l=='C') GC_in_m++;
+        }
+        matches += 0.1*abs(GC_in_m+GC-10);
         all_triplet_candidates_and_score.push_back(make_pair(matches,m));
     }
 
     sort(all_triplet_candidates_and_score.begin(), all_triplet_candidates_and_score.end());
 
-    int rad = rand()%8;
-    result=all_triplet_candidates_and_score[rad].second;
-    //cout<<"select top "<<rad<<" "<<result<<"   its matches are"<<all_triplet_candidates_and_score[rad].first<<result<<endl;
+    result=all_triplet_candidates_and_score[bits_triplet].second;
 
     //replace last 17
     for (int i = 0; i < result.size(); ++i) {
@@ -524,88 +454,209 @@ string DNA_encoder::exhaustive_search_triplets() {
     return result;
 }
 
-string DNA_encoder::partial_search_triplets() {
-    string result;
-    vector<pair<int,string>> all_triplet_candidates_and_score;
+static void multithread_complementary_GC_checking(list<string>& subsequences, int GC, string candidate, list<char>& last_17nt_, unordered_map<string,string>& complementary_triplets_table_, unordered_map<string,uint8_t>& look_back_window_, double& weight)
+{
+        bool match1= false;
+        bool match2= false;
+        bool match3= false;
+        bool match4= false;
+        bool match5= false;
 
+
+
+        //last two base + first base of the triplet
+        string str1;
+        str1.insert (0, 1, candidate[0]);
+        auto it = last_17nt_.end();
+        it--;
+        str1.insert (0, 1, *it);
+        it--;
+        str1.insert (0, 1, *it);
+        subsequences.emplace_back(str1);
+
+        string complement_str1 = complementary_triplets_table_.find(str1)->second;
+        if (look_back_window_.find(complement_str1)!=look_back_window_.end())
+            match1= true;
+
+        //last base + first two base of the triplet
+        string str2;
+        str2.insert (0, 1, candidate[1]);
+        str2.insert (0, 1, candidate[0]);
+        it = last_17nt_.end();
+        it--;
+        str2.insert (0, 1, *it);
+        subsequences.emplace_back(str2);
+
+        string complement_str2 = complementary_triplets_table_.find(str2)->second;
+        if (look_back_window_.find(complement_str2)!=look_back_window_.end())
+            match2= true;
+
+        //the triplet
+        subsequences.emplace_back(candidate);
+        string complement_str3 = complementary_triplets_table_.find(candidate)->second;
+        if (look_back_window_.find(complement_str3)!=look_back_window_.end())
+            match3= true;
+
+
+        //last base + triplet
+        string str4 = candidate;
+        it = last_17nt_.end();
+        it--;
+        str4.insert (0, 1, *it);
+        subsequences.emplace_back(str4);
+
+        if (match2== true && match3== true){
+            string complement_str4=complement_str3;
+            it = last_17nt_.end();
+            it--;
+            if (*it=='A')  complement_str4.insert (0, 1, 'T');
+            else if (*it=='T') complement_str4.insert (0, 1, 'A');
+            else if (*it=='C') complement_str4.insert (0, 1, 'G');
+            else if (*it=='G') complement_str4.insert (0, 1, 'C');
+
+            if (look_back_window_.find(complement_str4)!=look_back_window_.end())
+                match4= true;
+        }
+
+        //last two bases + first two bases of triplet
+        string str5 = str1;
+        str5.insert (3, 1, candidate[1]);
+        subsequences.emplace_back(str5);
+
+        if (match1== true && match2== true){
+            string complement_str5=complement_str1;
+            if (candidate[1]=='A')  complement_str5.insert (3, 1, 'T');
+            else if (candidate[1]=='T') complement_str5.insert (3, 1, 'A');
+            else if (candidate[1]=='C') complement_str5.insert (3, 1, 'G');
+            else if (candidate[1]=='G') complement_str5.insert (3, 1, 'C');
+
+            if (look_back_window_.find(complement_str5)!=look_back_window_.end())
+                match5= true;
+        }
+        double matches=0;
+        if (match1) matches+=3;
+        if (match2) matches+=3;
+        if (match3) matches+=3;
+        if (match4) matches+=4;  // ensure long complementary sequence has larger weight, even if count redundantly
+        if (match5) matches+=4;
+
+
+        // compare GC to further tune each candidates's weight (but in finer grain)
+        int GC_in_m=0;
+        for (auto l:candidate){
+            if (l=='G' || l=='C') GC_in_m++;
+        }
+
+        weight = matches + 0.1*abs(GC_in_m+GC-10);
+}
+
+string DNA_encoder::multithread_partial_search_triplets(int bits_triplet) {
+    string result;
+    vector<pair<double,string>> all_triplet_candidates_and_score;
+    unordered_map<string,list<string>> subsequences_of_each_candidates;
     list<string> candidates;
+
     if(g_num_bit_per_triplet==2){
-        uint8_t binary=rand()%4;
-        candidates = two_bits_NT_triplets_candidates_[binary];
+        candidates = two_bits_NT_triplets_candidates_[bits_triplet];
     }else if (g_num_bit_per_triplet==3){
-        uint8_t binary=rand()%8;
-        candidates = three_bits_NT_triplets_candidates_[binary];
+        candidates = three_bits_NT_triplets_candidates_[bits_triplet];
     }else if (g_num_bit_per_triplet==4){
-        uint8_t binary=rand()%16;
-        candidates = four_bits_NT_triplets_candidates_[binary];
+        candidates = four_bits_NT_triplets_candidates_[bits_triplet];
     }
 
-    list<string> homo1;
+    vector<string> homo1;
     //homo
     for (auto n:candidates){
         if (last_17nt_.back()!=n[0])
-            homo1.push_back(n);   // since n has no homo, as long as
+            homo1.push_back(n);
     }
 
-    unordered_map<string,list<string>> concatenate_triplets_of_each_candidates;
-    for (auto m:homo1){
-        int matches=0;
-        list<string> concatenate_triplets;
+    int GC=0;
+    for (auto s:last_17nt_){
+        if (s=='G' || s=='C') GC++;
+    }
 
-        concatenate_triplets.emplace_back(m);
-        //string complement_str1 = complementary_sequence(m);
-        string complement_str1 = complementary_triplets_table_.find(m)->second;
-        //str 1
-        if (triplets_in_last_17nt_.find(complement_str1)!=triplets_in_last_17nt_.end())
-            matches++;
+    //at most 4 candidates
+    list<string> subsequences_candidate_1;
+    double weight_1=10000; //default a large unrealistic weight
+    list<string> subsequences_candidate_2;
+    double weight_2=10000;
+    list<string> subsequences_candidate_3;
+    double weight_3=10000;
+    list<string> subsequences_candidate_4;
+    double weight_4=10000;
 
+    //one thread one candidate
+   if (homo1.size()==4){
+        clock_t time_tt1 = clock();
+        thread th1(multithread_complementary_GC_checking, ref(subsequences_candidate_1), GC, homo1[0], ref(last_17nt_), ref(complementary_triplets_table_), ref(look_back_window_), ref(weight_1));
+        thread th2(multithread_complementary_GC_checking, ref(subsequences_candidate_2), GC, homo1[1], ref(last_17nt_), ref(complementary_triplets_table_), ref(look_back_window_), ref(weight_2));
+        thread th3(multithread_complementary_GC_checking, ref(subsequences_candidate_3), GC, homo1[2], ref(last_17nt_), ref(complementary_triplets_table_), ref(look_back_window_), ref(weight_3));
+        thread th4(multithread_complementary_GC_checking, ref(subsequences_candidate_4), GC, homo1[3], ref(last_17nt_), ref(complementary_triplets_table_), ref(look_back_window_), ref(weight_4));
+        th1.join(); clock_t time_tt2 = clock();
+        th2.join(); clock_t time_tt3 = clock();
+        th3.join(); clock_t time_tt4 = clock();
+        th4.join(); clock_t time_tt5 = clock();
 
-        //str 2
-        string str2;
-        str2.insert (0, 1, m[0]);
-        auto it = last_17nt_.end();
-        it--;
-        str2.insert (0, 1, *it);
-        it--;
-        str2.insert (0, 1, *it);
-        concatenate_triplets.emplace_back(str2);
+       cout<<time_tt2-time_tt1<<endl;
+       cout<<time_tt3-time_tt2<<endl;
+       cout<<time_tt4-time_tt3<<endl;
+       cout<<time_tt5-time_tt4<<endl;
+       cout<<"total: "<<time_tt3-time_tt1<<endl;
+   }
+    else if (homo1.size()==3){
+        thread th1(multithread_complementary_GC_checking, ref(subsequences_candidate_1), GC, homo1[0], ref(last_17nt_), ref(complementary_triplets_table_), ref(look_back_window_), ref(weight_1));
+        thread th2(multithread_complementary_GC_checking, ref(subsequences_candidate_2), GC, homo1[1], ref(last_17nt_), ref(complementary_triplets_table_), ref(look_back_window_), ref(weight_2));
+        thread th3(multithread_complementary_GC_checking, ref(subsequences_candidate_3), GC, homo1[2], ref(last_17nt_), ref(complementary_triplets_table_), ref(look_back_window_), ref(weight_3));
+        th1.join();
+        th2.join();
+        th3.join();
+    }
+    else if (homo1.size()==2){
+        thread th1(multithread_complementary_GC_checking, ref(subsequences_candidate_1), GC, homo1[0], ref(last_17nt_), ref(complementary_triplets_table_), ref(look_back_window_), ref(weight_1));
+        thread th2(multithread_complementary_GC_checking, ref(subsequences_candidate_2), GC, homo1[1], ref(last_17nt_), ref(complementary_triplets_table_), ref(look_back_window_), ref(weight_2));
+        th1.join();
+        th2.join();
+    } else {
+        thread th1(multithread_complementary_GC_checking, ref(subsequences_candidate_1), GC, homo1[0], ref(last_17nt_), ref(complementary_triplets_table_), ref(look_back_window_), ref(weight_1));
+        th1.join();
+    }
 
-        string complement_str2 = complementary_triplets_table_.find(str2)->second;
-        if (triplets_in_last_17nt_.find(complement_str2)!=triplets_in_last_17nt_.end())
-            matches++;
+    if (homo1.size()==4){
+        all_triplet_candidates_and_score.emplace_back(make_pair(weight_1,homo1[0]));
+        all_triplet_candidates_and_score.emplace_back(make_pair(weight_2,homo1[1]));
+        all_triplet_candidates_and_score.emplace_back(make_pair(weight_3,homo1[2]));
+        all_triplet_candidates_and_score.emplace_back(make_pair(weight_4,homo1[3]));
 
+        subsequences_of_each_candidates.emplace(homo1[0],subsequences_candidate_1);
+        subsequences_of_each_candidates.emplace(homo1[1],subsequences_candidate_2);
+        subsequences_of_each_candidates.emplace(homo1[2],subsequences_candidate_3);
+        subsequences_of_each_candidates.emplace(homo1[3],subsequences_candidate_4);
+    }
+    else if (homo1.size()==3){
+        all_triplet_candidates_and_score.emplace_back(make_pair(weight_1,homo1[0]));
+        all_triplet_candidates_and_score.emplace_back(make_pair(weight_2,homo1[1]));
+        all_triplet_candidates_and_score.emplace_back(make_pair(weight_3,homo1[2]));
 
+        subsequences_of_each_candidates.emplace(homo1[0],subsequences_candidate_1);
+        subsequences_of_each_candidates.emplace(homo1[1],subsequences_candidate_2);
+        subsequences_of_each_candidates.emplace(homo1[2],subsequences_candidate_3);
+    }
+    else if (homo1.size()==2){
+        all_triplet_candidates_and_score.emplace_back(make_pair(weight_1,homo1[0]));
+        all_triplet_candidates_and_score.emplace_back(make_pair(weight_2,homo1[1]));
 
+        subsequences_of_each_candidates.emplace(homo1[0],subsequences_candidate_1);
+        subsequences_of_each_candidates.emplace(homo1[1],subsequences_candidate_2);
+    } else {
+        all_triplet_candidates_and_score.emplace_back(make_pair(weight_1,homo1[0]));
 
-        //str 3
-        string str3;
-        str3.insert (0, 1, m[1]);
-        str3.insert (0, 1, m[0]);
-        it = last_17nt_.end();
-        it--;
-        str3.insert (0, 1, *it);
-        concatenate_triplets.emplace_back(str3);
-
-        string complement_str3 = complementary_triplets_table_.find(str3)->second;
-        if (triplets_in_last_17nt_.find(complement_str3)!=triplets_in_last_17nt_.end())
-            matches++;
-
-
-        //cout<<"triplet "<<m<<" matches "<<matches<<endl;
-        all_triplet_candidates_and_score.emplace_back(make_pair(matches,m));
-        concatenate_triplets_of_each_candidates.emplace(m,concatenate_triplets);
+        subsequences_of_each_candidates.emplace(homo1[0],subsequences_candidate_1);
     }
 
     sort(all_triplet_candidates_and_score.begin(), all_triplet_candidates_and_score.end());
 
-    /*cout<<"   -----    "<<endl;
-    for (auto a:all_triplet_candidates_and_score){
-        cout<<a.second<<" matches"<<a.first<<endl;
-    }*/
-
-
     result=all_triplet_candidates_and_score.begin()->second;
-    //cout<<"select top "<<rad<<" "<<result<<"   its matches are"<<all_triplet_candidates_and_score[rad].first<<result<<endl;
 
     //replace last 17
     for (int i = 0; i < result.size(); ++i) {
@@ -613,178 +664,226 @@ string DNA_encoder::partial_search_triplets() {
         last_17nt_.erase(last_17nt_.begin());
     }
 
-    //insert new triplets to triplets_in_last_17nt_
-    list<string> concatenate_triplets_of_select_triplets = concatenate_triplets_of_each_candidates.find(result)->second;
-    for (auto s:concatenate_triplets_of_select_triplets) {
-        if (triplets_in_last_17nt_.find(s)==triplets_in_last_17nt_.end())
-            triplets_in_last_17nt_.emplace(s,1);
+    //insert new subsequences to look back window
+    list<string> subsequences_of_select_triplets = subsequences_of_each_candidates.find(result)->second;
+    for (auto s:subsequences_of_select_triplets) {
+        if (look_back_window_.find(s)==look_back_window_.end())
+            look_back_window_.emplace(s,1);
         else
-            triplets_in_last_17nt_.find(s)->second++;
+            look_back_window_.find(s)->second++;
     }
 
-    //delete old triplets from triplets_in_last_17nt_
+    //delete old subsequence from look back window
     auto it = last_17nt_.begin();
-    string delete_str1, delete_str2, delete_str3;
+    string delete_str1, delete_str2, delete_str3, delete_str4, delete_str5, delete_str6;
     delete_str1.push_back(*it);
 
     it++;
     delete_str1.push_back(*it);
     delete_str2.push_back(*it);
+    delete_str4.push_back(*it);
+
 
     it++;
     delete_str1.push_back(*it);
     delete_str2.push_back(*it);
     delete_str3.push_back(*it);
+    delete_str4.push_back(*it);
+    delete_str5.push_back(*it);
 
     it++;
     delete_str2.push_back(*it);
     delete_str3.push_back(*it);
+    delete_str4.push_back(*it);
+    delete_str5.push_back(*it);
 
     it++;
     delete_str3.push_back(*it);
+    delete_str4.push_back(*it);
+    delete_str5.push_back(*it);
 
-    auto ptr1 = triplets_in_last_17nt_.find(delete_str1);
-    if (ptr1==triplets_in_last_17nt_.end()){
-        cout<<"error in delete old triplets:"<<delete_str1<<" from triplets_in_last_17nt_";
-        cout<<"if not happen at begin, must be sth wrong"<<endl;
-    } else{
+    it++;
+    delete_str5.push_back(*it);
+
+    auto ptr1 = look_back_window_.find(delete_str1);
+    if (ptr1!=look_back_window_.end()){
         if (ptr1->second==1)
-            triplets_in_last_17nt_.erase(ptr1);
+            look_back_window_.erase(ptr1);
         else
             ptr1->second--;
     }
 
-
-
-
-    auto ptr2 = triplets_in_last_17nt_.find(delete_str2);
-    if (ptr2==triplets_in_last_17nt_.end()){
-        cout<<"error in delete old triplets:"<<delete_str2<<" from triplets_in_last_17nt_";
-        cout<<"if not happen at begin, must be sth wrong"<<endl;
-    } else{
+    auto ptr2 = look_back_window_.find(delete_str2);
+    if (ptr2!=look_back_window_.end()){
         if (ptr2->second==1)
-            triplets_in_last_17nt_.erase(ptr2);
+            look_back_window_.erase(ptr2);
         else
             ptr2->second--;
     }
 
-
-
-
-    auto ptr3 = triplets_in_last_17nt_.find(delete_str3);
-    if (ptr3==triplets_in_last_17nt_.end()){
-        cout<<"error in delete old triplets:"<<delete_str3<<" from triplets_in_last_17nt_";
-        cout<<"if not happen at begin, must be sth wrong"<<endl;
-    } else{
+    auto ptr3 = look_back_window_.find(delete_str3);
+    if (ptr3!=look_back_window_.end()){
         if (ptr3->second==1)
-            triplets_in_last_17nt_.erase(ptr3);
+            look_back_window_.erase(ptr3);
         else
             ptr3->second--;
+    }
+
+    auto ptr4 = look_back_window_.find(delete_str4);
+    if (ptr4!=look_back_window_.end()){
+        if (ptr4->second==1)
+            look_back_window_.erase(ptr4);
+        else
+            ptr4->second--;
+    }
+
+    auto ptr5 = look_back_window_.find(delete_str5);
+    if (ptr5!=look_back_window_.end()){
+        if (ptr5->second==1)
+            look_back_window_.erase(ptr5);
+        else
+            ptr5->second--;
     }
 
     return result;
 }
 
-string DNA_encoder::partial_search_complementary_first() {
+string DNA_encoder::partial_search_triplets(int bits_triplet) {
     string result;
-    vector<pair<int,string>> all_triplet_candidates_and_score;
-
+    vector<pair<double,string>> all_triplet_candidates_and_score;
+    unordered_map<string,list<string>> subsequences_of_each_candidates;
     list<string> candidates;
-    uint8_t binary=rand()%8;
-    candidates = complementary_first_triplets_candidates_[binary];
 
-    // check complementary sequence first
-    unordered_map<string,list<string>> concatenate_triplets_of_each_candidates;
-    for (auto m:candidates){
-        int matches=0;
-        list<string> concatenate_triplets;
+    if(g_num_bit_per_triplet==2){
+        candidates = two_bits_NT_triplets_candidates_[bits_triplet];
+    }else if (g_num_bit_per_triplet==3){
+        candidates = three_bits_NT_triplets_candidates_[bits_triplet];
+    }else if (g_num_bit_per_triplet==4){
+        candidates = four_bits_NT_triplets_candidates_[bits_triplet];
+    }
 
-        concatenate_triplets.emplace_back(m);
-        //string complement_str1 = complementary_sequence(m);
-        string complement_str1 = complementary_triplets_table_.find(m)->second;
-        //str 1
-        if (triplets_in_last_17nt_.find(complement_str1)!=triplets_in_last_17nt_.end())
-            matches++;
+    vector<string> homo1;
+    //homo
+    for (auto n:candidates){
+        if (last_17nt_.back()!=n[0])
+            homo1.push_back(n);
+    }
+
+    int GC=0;
+    for (auto s:last_17nt_){
+        if (s=='G' || s=='C') GC++;
+    }
+
+    clock_t time_tt1, time_tt2;
+
+    time_tt1 = clock();
+    for (auto candidate:homo1){
 
 
-        //str 2
-        string str2;
-        str2.insert (0, 1, m[0]);
+        bool match1= false;
+        bool match2= false;
+        bool match3= false;
+        bool match4= false;
+        bool match5= false;
+        list<string> subsequences;
+        double weight=10000; //default a large unrealistic weight
+
+
+        //last two base + first base of the triplet
+        string str1;
+        str1.insert (0, 1, candidate[0]);
         auto it = last_17nt_.end();
         it--;
-        str2.insert (0, 1, *it);
+        str1.insert (0, 1, *it);
         it--;
-        str2.insert (0, 1, *it);
-        concatenate_triplets.emplace_back(str2);
+        str1.insert (0, 1, *it);
+        subsequences.emplace_back(str1);
 
-        string complement_str2 = complementary_triplets_table_.find(str2)->second;
-        if (triplets_in_last_17nt_.find(complement_str2)!=triplets_in_last_17nt_.end())
-            matches++;
+        string complement_str1 = complementary_triplets_table_.find(str1)->second;
+        if (look_back_window_.find(complement_str1)!=look_back_window_.end())
+            match1= true;
 
-
-
-
-        //str 3
-        string str3;
-        str3.insert (0, 1, m[1]);
-        str3.insert (0, 1, m[0]);
+        //last base + first two base of the triplet
+        string str2;
+        str2.insert (0, 1, candidate[1]);
+        str2.insert (0, 1, candidate[0]);
         it = last_17nt_.end();
         it--;
-        str3.insert (0, 1, *it);
-        concatenate_triplets.emplace_back(str3);
+        str2.insert (0, 1, *it);
+        subsequences.emplace_back(str2);
 
-        string complement_str3 = complementary_triplets_table_.find(str3)->second;
-        if (triplets_in_last_17nt_.find(complement_str3)!=triplets_in_last_17nt_.end())
-            matches++;
+        string complement_str2 = complementary_triplets_table_.find(str2)->second;
+        if (look_back_window_.find(complement_str2)!=look_back_window_.end())
+            match2= true;
+
+        //the triplet
+        subsequences.emplace_back(candidate);
+        string complement_str3 = complementary_triplets_table_.find(candidate)->second;
+        if (look_back_window_.find(complement_str3)!=look_back_window_.end())
+            match3= true;
 
 
-        //cout<<"triplet "<<m<<" matches "<<matches<<endl;
-        all_triplet_candidates_and_score.emplace_back(make_pair(matches,m));
-        concatenate_triplets_of_each_candidates.emplace(m,concatenate_triplets);
+        //last base + triplet
+        string str4 = candidate;
+        it = last_17nt_.end();
+        it--;
+        str4.insert (0, 1, *it);
+        subsequences.emplace_back(str4);
+
+        if (match2== true && match3== true){
+            string complement_str4=complement_str3;
+            it = last_17nt_.end();
+            it--;
+            if (*it=='A')  complement_str4.insert (0, 1, 'T');
+            else if (*it=='T') complement_str4.insert (0, 1, 'A');
+            else if (*it=='C') complement_str4.insert (0, 1, 'G');
+            else if (*it=='G') complement_str4.insert (0, 1, 'C');
+
+            if (look_back_window_.find(complement_str4)!=look_back_window_.end())
+                match4= true;
+        }
+
+        //last two bases + first two bases of triplet
+        string str5 = str1;
+        str5.insert (3, 1, candidate[1]);
+        subsequences.emplace_back(str5);
+
+        if (match1== true && match2== true){
+            string complement_str5=complement_str1;
+            if (candidate[1]=='A')  complement_str5.insert (3, 1, 'T');
+            else if (candidate[1]=='T') complement_str5.insert (3, 1, 'A');
+            else if (candidate[1]=='C') complement_str5.insert (3, 1, 'G');
+            else if (candidate[1]=='G') complement_str5.insert (3, 1, 'C');
+
+            if (look_back_window_.find(complement_str5)!=look_back_window_.end())
+                match5= true;
+        }
+        double matches=0;
+        if (match1) matches+=3;
+        if (match2) matches+=3;
+        if (match3) matches+=3;
+        if (match4) matches+=4;  // ensure long complementary sequence has larger weight, even if count redundantly
+        if (match5) matches+=4;
+
+
+        // compare GC to further tune each candidates's weight (but in finer grain)
+        int GC_in_m=0;
+        for (auto l:candidate){
+            if (l=='G' || l=='C') GC_in_m++;
+        }
+
+        weight = matches + 0.1*abs(GC_in_m+GC-10);;
+
+        all_triplet_candidates_and_score.emplace_back(make_pair(weight,candidate));
+        subsequences_of_each_candidates.emplace(candidate,subsequences);
     }
+        time_tt2 = clock();
+        cout<<"total "<<homo1.size()<<": "<<time_tt2-time_tt1<<endl;
 
     sort(all_triplet_candidates_and_score.begin(), all_triplet_candidates_and_score.end());
 
-    /*cout<<"   -----    "<<endl;
-    for (auto a:all_triplet_candidates_and_score){
-        cout<<a.second<<" matches"<<a.first<<endl;
-    }*/
+    result=all_triplet_candidates_and_score.begin()->second;
 
-    //check homo
-    list<string> homo;
-    // list all candidates that have min matches
-    int min_matches = all_triplet_candidates_and_score.begin()->first;
-    for (auto n:all_triplet_candidates_and_score){
-        if (n.first>min_matches) break;
-        homo.emplace_back(n.second);
-    }
-
-    // count length of homo
-    vector<pair<int,string>> all_triplets_with_homo_len;
-    char last_one = last_17nt_.back();
-
-    for (auto n:homo){
-        int max_length_of_homo=1;
-        int cur_length_of_homo=1;
-        for (int i = 0; i < n.size(); ++i) {
-            if(n[i] == last_one){
-                cur_length_of_homo++;
-                if(cur_length_of_homo>max_length_of_homo)
-                {
-                    max_length_of_homo = cur_length_of_homo;
-                }
-            }
-            else  cur_length_of_homo = 1;
-            last_one = n[i];
-        }
-        all_triplets_with_homo_len.emplace_back(make_pair(max_length_of_homo,n));
-    }
-    sort(all_triplets_with_homo_len.begin(), all_triplets_with_homo_len.end());
-    // select the one with least homo len
-
-
-    result=all_triplets_with_homo_len.begin()->second;
-    //cout<<"select top "<<rad<<" "<<result<<"   its matches are"<<all_triplet_candidates_and_score[rad].first<<result<<endl;
 
     //replace last 17
     for (int i = 0; i < result.size(); ++i) {
@@ -792,73 +891,85 @@ string DNA_encoder::partial_search_complementary_first() {
         last_17nt_.erase(last_17nt_.begin());
     }
 
-    //insert new triplets to triplets_in_last_17nt_
-    list<string> concatenate_triplets_of_select_triplets = concatenate_triplets_of_each_candidates.find(result)->second;
-    for (auto s:concatenate_triplets_of_select_triplets) {
-        if (triplets_in_last_17nt_.find(s)==triplets_in_last_17nt_.end())
-            triplets_in_last_17nt_.emplace(s,1);
+    //insert new subsequences to look back window
+    list<string> subsequences_of_select_triplets = subsequences_of_each_candidates.find(result)->second;
+    for (auto s:subsequences_of_select_triplets) {
+        if (look_back_window_.find(s)==look_back_window_.end())
+            look_back_window_.emplace(s,1);
         else
-            triplets_in_last_17nt_.find(s)->second++;
+            look_back_window_.find(s)->second++;
     }
 
-    //delete old triplets from triplets_in_last_17nt_
+    //delete old subsequence from look back window
     auto it = last_17nt_.begin();
-    string delete_str1, delete_str2, delete_str3;
+    string delete_str1, delete_str2, delete_str3, delete_str4, delete_str5, delete_str6;
     delete_str1.push_back(*it);
 
     it++;
     delete_str1.push_back(*it);
     delete_str2.push_back(*it);
+    delete_str4.push_back(*it);
+
 
     it++;
     delete_str1.push_back(*it);
     delete_str2.push_back(*it);
     delete_str3.push_back(*it);
+    delete_str4.push_back(*it);
+    delete_str5.push_back(*it);
 
     it++;
     delete_str2.push_back(*it);
     delete_str3.push_back(*it);
+    delete_str4.push_back(*it);
+    delete_str5.push_back(*it);
 
     it++;
     delete_str3.push_back(*it);
+    delete_str4.push_back(*it);
+    delete_str5.push_back(*it);
 
-    auto ptr1 = triplets_in_last_17nt_.find(delete_str1);
-    if (ptr1==triplets_in_last_17nt_.end()){
-        cout<<"error in delete old triplets:"<<delete_str1<<" from triplets_in_last_17nt_";
-        cout<<"if not happen at begin, must be sth wrong"<<endl;
-    } else{
+    it++;
+    delete_str5.push_back(*it);
+
+    auto ptr1 = look_back_window_.find(delete_str1);
+    if (ptr1!=look_back_window_.end()){
         if (ptr1->second==1)
-            triplets_in_last_17nt_.erase(ptr1);
+            look_back_window_.erase(ptr1);
         else
             ptr1->second--;
     }
 
-
-
-
-    auto ptr2 = triplets_in_last_17nt_.find(delete_str2);
-    if (ptr2==triplets_in_last_17nt_.end()){
-        cout<<"error in delete old triplets:"<<delete_str2<<" from triplets_in_last_17nt_";
-        cout<<"if not happen at begin, must be sth wrong"<<endl;
-    } else{
+    auto ptr2 = look_back_window_.find(delete_str2);
+    if (ptr2!=look_back_window_.end()){
         if (ptr2->second==1)
-            triplets_in_last_17nt_.erase(ptr2);
+            look_back_window_.erase(ptr2);
         else
             ptr2->second--;
     }
 
-
-
-
-    auto ptr3 = triplets_in_last_17nt_.find(delete_str3);
-    if (ptr3==triplets_in_last_17nt_.end()){
-        cout<<"error in delete old triplets:"<<delete_str3<<" from triplets_in_last_17nt_";
-        cout<<"if not happen at begin, must be sth wrong"<<endl;
-    } else{
+    auto ptr3 = look_back_window_.find(delete_str3);
+    if (ptr3!=look_back_window_.end()){
         if (ptr3->second==1)
-            triplets_in_last_17nt_.erase(ptr3);
+            look_back_window_.erase(ptr3);
         else
             ptr3->second--;
+    }
+
+    auto ptr4 = look_back_window_.find(delete_str4);
+    if (ptr4!=look_back_window_.end()){
+        if (ptr4->second==1)
+            look_back_window_.erase(ptr4);
+        else
+            ptr4->second--;
+    }
+
+    auto ptr5 = look_back_window_.find(delete_str5);
+    if (ptr5!=look_back_window_.end()){
+        if (ptr5->second==1)
+            look_back_window_.erase(ptr5);
+        else
+            ptr5->second--;
     }
 
     return result;
@@ -866,69 +977,71 @@ string DNA_encoder::partial_search_complementary_first() {
 
 
 string DNA_encoder::heuristic_encoding(string digital_data) {
+    while (digital_data.size() % 30 != 0){
+        digital_data = digital_data + '\0';
+    }
+    //cout << "digital_data.size() = " << digital_data.size() << endl;
+
+    // step 1: apply 2 parity bytes on each 30-bytes block
+    const int MSG_LENGTH = 30;
+    const int ECC_LENGTH = 2;
+    const int ENCODED_LENGTH = MSG_LENGTH + ECC_LENGTH;
+    RS::ReedSolomon<MSG_LENGTH, ECC_LENGTH> rs;
+
+    int n_rs_unit = digital_data.size() / MSG_LENGTH;
+    //cout << "n_rs_unit = " << n_rs_unit << endl;
+    //cout << "encoded_unit_length = " << ENCODED_LENGTH * n_rs_unit << endl;
+    char rs_result[ENCODED_LENGTH * n_rs_unit];
+    for (int i = 0, j = 0; i < digital_data.size(); i += MSG_LENGTH, j += ENCODED_LENGTH) {
+        char message[MSG_LENGTH+1];
+        message[MSG_LENGTH] = '\0';
+        memcpy(message, digital_data.c_str()+i, MSG_LENGTH);
+        // cout << "message = " << message << endl;
+        char cur_encoded[ENCODED_LENGTH+1];
+        cur_encoded[ENCODED_LENGTH] = '\0';
+        rs.Encode(message, cur_encoded);
+        // cout << "encoded message = " << cur_encoded << endl;
+        // cout << "encoded length = " << strlen(cur_encoded) << endl;
+        memcpy(rs_result + j, cur_encoded, ENCODED_LENGTH);
+    }
+
     string result;
     int size = digital_data.size();
-        //grab 30*8 bits a time
-        for (int j = 0; j < size; ++j) {
-            bitset<8> bits1(digital_data.c_str()[j]);
-        }
+        for (int j = 0; j < sizeof(rs_result); j+=3) {// 3 bytes (24 bits) a time,
+            // convert from 256^3 to 8^8
+            unsigned int middle_num = ((((unsigned int)rs_result[j])&0xff) * 256 + (((unsigned int)rs_result[j+1])&0xff))* 256 + (((unsigned int)rs_result[j+2])&0xff);
+            // cout << "l r m = " << hex << (unsigned int)(char)(rs_result[i]) << '\t' << (unsigned int)(rs_result[i+1]) << '\t' << middle_num << endl << flush;
+            unsigned int base8_num[8];
+            base8_num[7] = middle_num % 8;
+            middle_num /= 8;
+            base8_num[6] = middle_num % 8;
+            middle_num /= 8;
+            base8_num[5] = middle_num % 8;
+            middle_num /= 8;
+            base8_num[4] = middle_num % 8;
+            middle_num /= 8;
+            base8_num[3] = middle_num % 8;
+            middle_num /= 8;
+            base8_num[2] = middle_num % 8;
+            middle_num /= 8;
+            base8_num[1] = middle_num % 8;
+            middle_num /= 8;
+            base8_num[0] = middle_num % 8;
+            middle_num /= 8;
+            assert(middle_num == 0);
 
-
-        for (int j = 0; j < size*8; j+=g_num_bit_per_triplet) {
-            //mapping between binary bits and NT triplets
-            //because in experiment, we dont have to decode, we can just encode with the top one
-
-            //list<string>triplets = sort_triplets();
-            if (g_encoding_scheme==5)
-                result+=exhaustive_search_triplets();
-            if (g_encoding_scheme==6)
-                result+=partial_search_triplets();
-            if (g_encoding_scheme==7)
-                result+=partial_search_complementary_first();
+            // need to change if using 4-bits or 2-bits
+            for (int i = 0; i < 8; i++) {
+                if (g_encoding_scheme==5)
+                    result+=exhaustive_search_triplets(base8_num[i]);
+                if (g_encoding_scheme==6)
+                    result+=multithread_partial_search_triplets(base8_num[i]);
+                    //result+=partial_search_triplets(base8_num[i]);
+            }
         }
 
     return result;
 }
-
-string DNA_encoder::prefix_encoding(string digital_data) {
-    string result;
-    for (std::size_t i = 0; i < digital_data.size(); i++)
-    {
-        //cover from binary to decimal
-        bitset<8> bits(digital_data.c_str()[i]);
-        for (int j = 0; j < 8; j+=2) {
-            if (bits[j]==1){
-               result+=*last_20nt_.begin();
-               last_20nt_.emplace_back(*last_20nt_.begin());
-               last_20nt_.erase(last_20nt_.begin());
-            }
-            else if (bits[j]==0){
-                if (*last_20nt_.begin()=="A"){
-                    result+="T";
-                    last_20nt_.emplace_back("T");
-                    last_20nt_.erase(last_20nt_.begin());
-                } else if (*last_20nt_.begin()=="T"){
-                    result+="A";
-                    last_20nt_.emplace_back("A");
-                    last_20nt_.erase(last_20nt_.begin());
-                }else if (*last_20nt_.begin()=="C"){
-                    result+="G";
-                    last_20nt_.emplace_back("G");
-                    last_20nt_.erase(last_20nt_.begin());
-                } else if (*last_20nt_.begin()=="G"){
-                    result+="C";
-                    last_20nt_.emplace_back("C");
-                    last_20nt_.erase(last_20nt_.begin());
-                } else {
-                    cerr<<"bit not 1 or 0"<<endl;
-                    EXIT_FAILURE;
-                }
-            }
-        }
-    }
-    return result;
-}
-
 
 // strand level randomize: pseudo_strand XOR encoded_strand
 void DNA_encoder::randomize_XOR(string &digital_data) {
@@ -943,90 +1056,43 @@ void DNA_encoder::randomize_XOR(string &digital_data) {
 }
 
 
-// fixed 200 strand
+
 void DNA_encoder::encoding_stranding(){
-    // create payload file to store encoded strands
     fstream payload_file;
     int prefix = rand();
     string payload_path = g_payload_path+to_string(prefix)+"payload";
-    int num_of_GB = 1;
+    int file_number = 1;
     unsigned long total_len = 0;
-    payload_path += to_string(num_of_GB);
+    payload_path += to_string(file_number);
     payload_file.open(payload_path,ios::out);
 
     long int strand_num=0;
-    //create reading buffer
-    uint8_t buf[30];
-    //go over all files to chunking and encoding
+    uint8_t buf[10*1024];
     FILE *fp;
     string nt_sequence;
-
-
-
-
-/*    // Todo remember to decommand all file initialization
-    fp = fopen(g_data_path.c_str(), "r");
-    if (fp==NULL) {fputs ("File open error",stderr); exit (1);}
-    while ( !feof(fp) ) {
-
-        //cout<<total_len<<endl;
-        size_t len = fread(buf, 1, sizeof(buf), fp);
-        // total_len += len;
-        uint8_t *ptr = &buf[0];
-
-        string digital_data ((char*)ptr,len);
-
-        string strand=heuristic_encoding(digital_data);
-        payload_file<<">payload"<<strand_num++<<endl;
-        // execute transformation: mapping/swap/...
-        payload_file<<strand<<endl;
-        total_len += strand.length();
-
-
-    }
-    fclose(fp);*/
-
 
     for(auto n:all_files_){
         fp = fopen(n.c_str(), "r");
         if (fp==NULL) {fputs ("File open error",stderr); exit (1);}
         while ( !feof(fp) ) {
-
-            // TODO remember to change file size when change num_of_bits_per_triplet
-            if (total_len>=(long)130*1024*1024){
+            if (total_len>=(long)10*1024*1024){
                 total_len = 0;
                 payload_file.close();
-                num_of_GB += 1;
-                payload_path = g_payload_path+to_string(prefix)+"payload"+to_string(num_of_GB);
+                file_number += 1;
+                payload_path = g_payload_path+to_string(prefix)+"payload"+to_string(file_number);
                 payload_file.open(payload_path,ios::out);
             }
-            //cout<<total_len<<endl;
             size_t len = fread(buf, 1, sizeof(buf), fp);
-            // total_len += len;
             uint8_t *ptr = &buf[0];
-
             string digital_data ((char*)ptr,len);
-
-
             // rotate code
+
+            string strand;
             if(g_encoding_scheme==1) {
-                if (g_if_randomization) {
-                    randomize_XOR(digital_data);
-                }
-                string strand = RS_rotation(digital_data);
-                //string strand=RS_2bits_rotation(digital_data);
-                //string strand=Church_encoding(digital_data);
-                payload_file << ">payload" << strand_num++ << endl;
-                // execute transformation: mapping/swap/...
-                payload_file << strand << endl;
-                total_len += sizeof(buf);
+                strand = RS_rotation(digital_data);
             }
             else if(g_encoding_scheme==0){
-                string strand=direct_encoding(digital_data);
-                payload_file<<">payload"<<strand_num++<<endl;
-                // execute transformation: mapping/swap/...
-                payload_file<<strand<<endl;
-                total_len += sizeof(buf);
+                strand=Church_encoding(digital_data);
             }
             else if(g_encoding_scheme==2){
                 // 200 nts correspoinding to 320 bits
@@ -1035,7 +1101,7 @@ void DNA_encoder::encoding_stranding(){
                 while (digital_data.size()>0){
                     string digital_strand;
                     
-                    if (g_if_ECC){
+                    if (g_if_ECC){//FEC has its own ecc except RS code
                         digital_strand = digital_data.substr(0,38);
 
                         // add ECC code
@@ -1054,11 +1120,7 @@ void DNA_encoder::encoding_stranding(){
                         digital_strand = digital_data.substr(0,40);
                     }
                     
-                    string strand = FEC_encoding(digital_strand);
-                    payload_file<<">payload"<<strand_num++<<endl;
-                    // execute transformation: mapping/swap/...
-                    payload_file<<strand<<endl;
-                    total_len += sizeof(buf);
+                    strand = FEC_encoding(digital_strand);
                     if (g_if_ECC){
                         digital_data.erase(0, 38);
                     }
@@ -1066,91 +1128,105 @@ void DNA_encoder::encoding_stranding(){
                         digital_data.erase(0, 40);
                     }
                 }
-                //nt_sequence=FEC_encoding(digital_data);
+            } else if (g_encoding_scheme==3){
+                strand=RS_GF47(digital_data);
             }
-            else if(g_encoding_scheme==4){ //prefix encoding
-                string strand=prefix_encoding(digital_data);
-                payload_file<<">payload"<<strand_num++<<endl;
-                // execute transformation: mapping/swap/...
-                payload_file<<strand<<endl;
-                total_len += sizeof(buf);
-            }
-            else if(g_encoding_scheme==5 || g_encoding_scheme==6 || g_encoding_scheme==7){ //heuristic encoding
-                string strand=heuristic_encoding(digital_data);
-                payload_file<<">payload"<<strand_num++<<endl;
-                // execute transformation: mapping/swap/...
-                payload_file<<strand<<endl;
-                total_len += sizeof(buf);
+            else if(g_encoding_scheme==5 || g_encoding_scheme==6 ){
+                strand=heuristic_encoding(digital_data);
             }
             else
                 cout<<"no encoding scheme"<<endl;
+
+            total_len += sizeof(buf);
+            for (int l=0; l<strand.size()/198; l++){
+                payload_file << ">payload" << strand_num++ << endl;
+                payload_file << strand.substr(l*198,198) << endl;
+            }
+            if (strand.size()%198>0){
+                payload_file << ">payload" << strand_num++ << endl;
+                payload_file << strand.substr(strand.size()/198*198,strand.size()%198) << endl;
+            }
+
+            // execute transformation: mapping/swap/...
+
+
         }
         fclose(fp);
     }
     payload_file.close();
 }
 
-// no strand
-// it's the original video_data stream feed for our algorithm (to cut & transformation)
-void DNA_encoder::encoding_no_strand(){
-
-    // create payload file to store encoded strands
-    fstream payload_file;
-    string payload_path = g_payload_path+"payload";
-    int num_of_payload_file = 1;
+void DNA_encoder::decode(){
+    // note: we leave this decode as an simple example. However, more decoder are temporarily not open sourced because we are furthur improving them for future work
+    fstream decode_file;
+    int prefix = rand();
+    string payload_path = g_payload_path+to_string(prefix)+"decode";
+    int num_of_GB = 1;
     unsigned long total_len = 0;
-    payload_path += to_string(num_of_payload_file);
-    payload_path += ".txt";
-    payload_file.open(payload_path,ios::out);
-    int num_of_file = 0;
-    payload_file<<">payload"<<num_of_file<<endl;
-    num_of_file++;
-    //create chunking buffer and related structure
-    uint8_t buf[1024*1024];
-    //go over all files to chunking and encoding
-    FILE *fp;
-    string nt_sequence;
+    payload_path += to_string(num_of_GB);
+    decode_file.open(payload_path,ios::out);
 
+    fstream input_file;
+
+    unordered_map<string,string> decode_dirctionary;
+    decode_dirctionary.emplace("TAC","000");
+    decode_dirctionary.emplace("GTA","000");
+    decode_dirctionary.emplace("CTG","000");
+    decode_dirctionary.emplace("CAG","000");
+    decode_dirctionary.emplace("ATA","000");
+
+    decode_dirctionary.emplace("ATG","001");
+    decode_dirctionary.emplace("CAT","001");
+    decode_dirctionary.emplace("GAC","001");
+    decode_dirctionary.emplace("GTC","001");
+    decode_dirctionary.emplace("TAT","001");
+
+    decode_dirctionary.emplace("ACT","010");
+    decode_dirctionary.emplace("AGT","010");
+    decode_dirctionary.emplace("TGC","010");
+    decode_dirctionary.emplace("GCA","010");
+    decode_dirctionary.emplace("CGC","010");
+
+    decode_dirctionary.emplace("TCA","011");
+    decode_dirctionary.emplace("TGA","011");
+    decode_dirctionary.emplace("ACG","011");
+    decode_dirctionary.emplace("CGT","011");
+    decode_dirctionary.emplace("GCG","011");
+
+    decode_dirctionary.emplace("ATC","100");
+    decode_dirctionary.emplace("GAT","100");
+    decode_dirctionary.emplace("TCG","100");
+    decode_dirctionary.emplace("CGA","100");
+
+    decode_dirctionary.emplace("ACA","101");
+    decode_dirctionary.emplace("TGT","101");
+    decode_dirctionary.emplace("CAC","101");
+    decode_dirctionary.emplace("GTG","101");
+
+    decode_dirctionary.emplace("TAG","110");
+    decode_dirctionary.emplace("CTA","110");
+    decode_dirctionary.emplace("AGC","110");
+    decode_dirctionary.emplace("GCT","110");
+
+    decode_dirctionary.emplace("AGA","111");
+    decode_dirctionary.emplace("TCT","111");
+    decode_dirctionary.emplace("CTC","111");
+    decode_dirctionary.emplace("GAG","111");
 
     for(auto n:all_files_){
-        fp = fopen(n.c_str(), "r");
-        if (fp==NULL) {fputs ("File open error",stderr); exit (1);}
+        input_file.open(n.c_str(),ios::in);
+        string line;
+        while (getline(input_file,line)) {
+            if (line[0]=='>') continue;
 
-        while ( !feof(fp) ) {
-            size_t len = fread(buf, 1, sizeof(buf), fp);
-            // total_len += len;
-            uint8_t *ptr = &buf[0];
-
-            string digital_data ((char*)ptr,len);
-
-            if(g_encoding_scheme==1)
-                nt_sequence=RS_rotation(digital_data);
-                //nt_sequence=base3_rotate_encoding(digital_data);
-            else if (g_encoding_scheme==2)
-                nt_sequence=FEC_encoding(digital_data);
-            else if (g_encoding_scheme==3)
-                //nt_sequence=RS_GF47(digital_data);
-                nt_sequence=RS_GF25(digital_data);
-            else
-                cout<<"no encoding scheme"<<endl;
-            payload_file<<nt_sequence;
-            total_len += sizeof(buf);
-
-            if (total_len>=(long)5*1024*1024*1024){
-                total_len = 0;
-                payload_file.close();
-                num_of_payload_file += 1;
-                payload_path = g_payload_path+"payload"+to_string(num_of_payload_file)+".txt";
-                payload_file.open(payload_path,ios::out);
-                payload_file<<">payload"<<num_of_file<<endl;
-                num_of_file++;
+            for (int i = 0; i < line.size()-3; i+=3) {
+                string triplet = line.substr(i,3);
+                decode_file<<decode_dirctionary.find(triplet)->second;
             }
-
         }
-	payload_file<<endl;
-        fclose(fp);
+        input_file.close();
     }
-    payload_file.close();
+    decode_file.close();
 }
 
 uint16_t DNA_encoder::CCITT16(char *ptr, int length)
@@ -1593,53 +1669,6 @@ void DNA_encoder::initial_rotating_encoding_table() {
     rotating_encoding_table_.push_back(bit_value_2);
 }
 
-void DNA_encoder::initial_twobits_rotating_encoding_table() {
-    /*
-     *  [ 0
-     *      [A: C
-     *      [T: A
-     *      [C: G
-     *      [G: T
-     *  [ 1
-     *      [A: G
-     *      [T: C
-     *      [C: T
-     *      [G: A
-     *  [ 2
-     *      [A: T
-     *      [T: G
-     *      [C: A
-     *      [G: C
-     * */
-    unordered_map<string,string> bit_value_00;
-    unordered_map<string,string> bit_value_01;
-    unordered_map<string,string> bit_value_10;
-    unordered_map<string,string> bit_value_11;
-    string A="A";
-    string T="T";
-    string C="C";
-    string G="G";
-    bit_value_00.emplace(A,T);
-    bit_value_00.emplace(T,C);
-    bit_value_00.emplace(C,G);
-    bit_value_00.emplace(G,A);
-    rotating_encoding_table_.push_back(bit_value_00);
-    bit_value_01.emplace(A,C);
-    bit_value_01.emplace(T,G);
-    bit_value_01.emplace(C,A);
-    bit_value_01.emplace(G,T);
-    rotating_encoding_table_.push_back(bit_value_01);
-    bit_value_10.emplace(A,G);
-    bit_value_10.emplace(T,A);
-    bit_value_10.emplace(C,T);
-    bit_value_10.emplace(G,C);
-    rotating_encoding_table_.push_back(bit_value_10);
-    bit_value_11.emplace(A,A);
-    bit_value_11.emplace(T,T);
-    bit_value_11.emplace(C,C);
-    bit_value_11.emplace(G,G);
-    rotating_encoding_table_.push_back(bit_value_10);
-}
 
 void DNA_encoder::init_GF47_table() {
     RS_table[0] = "ACA"; RS_table[1] = "CCA"; RS_table[2] = "GCA";
@@ -1660,57 +1689,6 @@ void DNA_encoder::init_GF47_table() {
     RS_table[45] = "CGT"; RS_table[46] = "GGT";
 }
 
-void DNA_encoder::init_GF25_table() {
-    RS_table[0] = "GCA";
-    RS_table[1] = "TCA"; RS_table[2] = "CGA";
-     RS_table[3] = "TGA";
-    RS_table[4] = "CTA"; RS_table[5] = "GTA";
-      RS_table[6] = "GAC";
-    RS_table[7] = "TAC"; RS_table[8] = "AGC";
-     RS_table[9] = "TGC"; RS_table[10] = "ATC";
-     RS_table[11] = "GTC";
-     RS_table[12] = "CAG";
-    RS_table[13] = "TAG"; RS_table[14] = "ACG";
-     RS_table[15] = "TCG"; RS_table[16] = "ATG";
-    RS_table[17] = "CTG";
-     RS_table[18] = "CAT"; RS_table[19] = "GAT";
-    RS_table[20] = "TAT"; RS_table[21] = "ACT";
-    RS_table[22] = "GCT";  RS_table[23] = "AGT";
-    RS_table[24] = "CGT";
-}
-
-void DNA_encoder::init_last_20nt(){
-    /*for(int i=0; i<5; i++){
-        last_20nt_.push_back("A");
-        last_20nt_.push_back("G");
-        last_20nt_.push_back("T");
-        last_20nt_.push_back("C");
-    }*/
-
-    last_20nt_.emplace_back("G");
-    last_20nt_.emplace_back("A");
-    last_20nt_.emplace_back("C");
-    last_20nt_.emplace_back("A");
-    last_20nt_.emplace_back("T");
-    last_20nt_.emplace_back("C");
-
-
-    /*last_20nt_.emplace_back("C");
-    last_20nt_.emplace_back("C");
-
-    last_20nt_.emplace_back("A");
-    last_20nt_.emplace_back("A");
-    last_20nt_.emplace_back("A");
-    last_20nt_.emplace_back("G");
-    last_20nt_.emplace_back("G");
-    last_20nt_.emplace_back("G");
-    last_20nt_.emplace_back("T");
-    last_20nt_.emplace_back("T");
-    last_20nt_.emplace_back("T");
-    last_20nt_.emplace_back("C");
-    last_20nt_.emplace_back("C");
-    last_20nt_.emplace_back("C");*/
-}
 
 DNA_encoder::DNA_encoder() {
     // generate 267-length pseudo random. 200 ternary code is 266.6 binary code (6:8)
@@ -1728,23 +1706,15 @@ DNA_encoder::DNA_encoder() {
     }
     //initial rotating_encoding_table
     initial_rotating_encoding_table();
-    initial_twobits_rotating_encoding_table();
     initial_FEC_table();
-    init_last_20nt();
     init_heuristic_encoding();
     //initilize RS table
     init_GF47_table();
     //init_GF25_table();
 
-    if (g_if_pre_stranding){// output 200 nts strands
+    if (g_program==1){
         encoding_stranding();
+    } else if (g_program==5){
+        decode();
     }
-    else{
-        encoding_no_strand();
-    }
-    //encode with strand;
-    //encoding_stranding();
-    //encode without strand
-    //encoding_no_strand();
-    //encoding_file();
 }

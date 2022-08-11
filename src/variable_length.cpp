@@ -160,64 +160,23 @@ void VariableLength::Cut() {
 
     long long total_collision_num=0;
 
-    /*ofstream primer_collision_num;
+    ofstream primer_collision_num;
     primer_collision_num.open ("primer_collision_num.csv",ios::out | ios::trunc);
     vector<int> primer_distribution(200010,0);
     for(auto n:primer_collision_num_){
-        int collision_num = n.second*4;
-        if(collision_num>200000) collision_num=200000;
+        int collision_num = n.second;
         total_collision_num+=collision_num;
         primer_distribution[collision_num]++;
     }
 
     for(int i=0; i < primer_distribution.size(); i++){
-        // write into file
-        if (primer_distribution[i]>40){
-            if (i>400 && i<10000) {
-                int replace = rand() % 20;
-                primer_collision_num << i << "," << replace << endl;
-                int diff = primer_distribution[i] - replace;
-                while (diff > 0) {
-                    int pos = rand() % 10000 + 1;
-                    if (rand() % 2) {
-                        primer_distribution[i + pos] += 2;
-                        diff -= 2;
-                    } else {
-                        primer_distribution[i + pos]++;
-                        diff--;
-                    }
-                }
-                continue;
-            }
-            else if (i>10000 &&i<30000){
-                int replace = rand()%3;
-                primer_collision_num<<i<<","<<replace<<endl;
-                int diff = primer_distribution[i]-replace;
-                while (diff>0){
-                    int pos = rand()%20000+1;
-                    primer_distribution[i+pos]++;
-                    diff--;
-                    }
-                continue;
-            }
-            else if (i>30000){
-                    int replace = rand()%2;
-                    primer_collision_num<<i<<","<<replace<<endl;
-                    int diff = primer_distribution[i]-replace;
-                    while (diff>0){
-                        int pos = rand()%30000+1;
-                        primer_distribution[i+pos]++;
-                        diff--;
-                    }
-                continue;
-            }
-        }
         primer_collision_num<<i<<","<<primer_distribution[i]<<endl;
     }
     primer_collision_num.close();
-    cout<<"total collision: "<<total_collision_num*4<<"  collided primer: "<<total_collided_primer<<endl;
-    cout<<"avg collision per primer: "<<total_collision_num*4/(1.0*total_collided_primer)<<endl;*/
+    cout<<"total collision: "<<total_collision_num<<"  collided primer: "<<total_collided_primer<<endl;
+    cout<<"avg collision per primer: "<<total_collision_num/(1.0*total_collided_primer)<<endl;
 
+     /*
     int ideal_capacity = 1.55*1000000*200/2; //devide by 2 since it's a primer not a primer pair
     for (auto it : primer_collision_num_){
         double capacity = ideal_capacity - it.second*4*100; // we are using 64GB, collision num * 4 to scale to 200+GB
@@ -276,6 +235,7 @@ void VariableLength::Cut() {
     }
 
     PrintStatistics(total_collided_primer);
+     */
 }
 
 void VariableLength::PrintStatistics(int total_collided_primer) {
