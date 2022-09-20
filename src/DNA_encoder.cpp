@@ -9,8 +9,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <cassert>
-
-
+#include <future>
 
 string DNA_encoder::Church_encoding(string digital_data) {
     while (digital_data.size() % 30 != 0){
@@ -454,7 +453,7 @@ string DNA_encoder::exhaustive_search_triplets(int bits_triplet) {
     return result;
 }
 
-static void multithread_complementary_GC_checking(list<string>& subsequences, int GC, string candidate, list<char>& last_17nt_, unordered_map<string,string>& complementary_triplets_table_, unordered_map<string,uint8_t>& look_back_window_, double& weight)
+static double multithread_complementary_GC_checking(list<string>& subsequences, const int GC, const string& candidate, const list<char>& last_17nt_, const unordered_map<string,string>& complementary_triplets_table_, const unordered_map<string,uint8_t>& look_back_window_)
 {
         bool match1= false;
         bool match2= false;
@@ -547,7 +546,8 @@ static void multithread_complementary_GC_checking(list<string>& subsequences, in
             if (l=='G' || l=='C') GC_in_m++;
         }
 
-        weight = matches + 0.1*abs(GC_in_m+GC-10);
+        double weight = matches + 0.1*abs(GC_in_m+GC-10);
+    return weight;
 }
 
 string DNA_encoder::multithread_partial_search_triplets(int bits_triplet) {
@@ -589,37 +589,51 @@ string DNA_encoder::multithread_partial_search_triplets(int bits_triplet) {
     //one thread one candidate
    if (homo1.size()==4){
         clock_t time_tt1 = clock();
-        thread th1(multithread_complementary_GC_checking, ref(subsequences_candidate_1), GC, homo1[0], ref(last_17nt_), ref(complementary_triplets_table_), ref(look_back_window_), ref(weight_1));
-        thread th2(multithread_complementary_GC_checking, ref(subsequences_candidate_2), GC, homo1[1], ref(last_17nt_), ref(complementary_triplets_table_), ref(look_back_window_), ref(weight_2));
-        thread th3(multithread_complementary_GC_checking, ref(subsequences_candidate_3), GC, homo1[2], ref(last_17nt_), ref(complementary_triplets_table_), ref(look_back_window_), ref(weight_3));
-        thread th4(multithread_complementary_GC_checking, ref(subsequences_candidate_4), GC, homo1[3], ref(last_17nt_), ref(complementary_triplets_table_), ref(look_back_window_), ref(weight_4));
+        /*thread th1(multithread_complementary_GC_checking, ref(subsequences_candidate_1), GC, ref(homo1[0]), ref(last_17nt_), ref(complementary_triplets_table_), ref(look_back_window_), ref(weight_1));
+        thread th2(multithread_complementary_GC_checking, ref(subsequences_candidate_2), GC, ref(homo1[1]), ref(last_17nt_), ref(complementary_triplets_table_), ref(look_back_window_), ref(weight_2));
+        thread th3(multithread_complementary_GC_checking, ref(subsequences_candidate_3), GC, ref(homo1[2]), ref(last_17nt_), ref(complementary_triplets_table_), ref(look_back_window_), ref(weight_3));
+        thread th4(multithread_complementary_GC_checking, ref(subsequences_candidate_4), GC, ref(homo1[3]), ref(last_17nt_), ref(complementary_triplets_table_), ref(look_back_window_), ref(weight_4));
         th1.join(); clock_t time_tt2 = clock();
         th2.join(); clock_t time_tt3 = clock();
         th3.join(); clock_t time_tt4 = clock();
-        th4.join(); clock_t time_tt5 = clock();
+        th4.join(); clock_t time_tt5 = clock();*/
+
+        future<double> result_1 = async(launch::async,multithread_complementary_GC_checking,ref(subsequences_candidate_1), GC, ref(homo1[0]), ref(last_17nt_), ref(complementary_triplets_table_), ref(look_back_window_));
+       future<double> result_2 = async(launch::async,multithread_complementary_GC_checking,ref(subsequences_candidate_1), GC, ref(homo1[1]), ref(last_17nt_), ref(complementary_triplets_table_), ref(look_back_window_));
+       future<double> result_3 = async(launch::async,multithread_complementary_GC_checking,ref(subsequences_candidate_1), GC, ref(homo1[2]), ref(last_17nt_), ref(complementary_triplets_table_), ref(look_back_window_));
+       future<double> result_4 = async(launch::async,multithread_complementary_GC_checking,ref(subsequences_candidate_1), GC, ref(homo1[3]), ref(last_17nt_), ref(complementary_triplets_table_), ref(look_back_window_));
+
+       double weight_1=result_1.get();
+       clock_t time_tt2 = clock();
+       double weight_2=result_2.get();
+       clock_t time_tt3 = clock();
+       double weight_3=result_3.get();
+       clock_t time_tt4 = clock();
+       double weight_4=result_4.get();
+       clock_t time_tt5 = clock();
 
        cout<<time_tt2-time_tt1<<endl;
        cout<<time_tt3-time_tt2<<endl;
        cout<<time_tt4-time_tt3<<endl;
        cout<<time_tt5-time_tt4<<endl;
-       cout<<"total: "<<time_tt3-time_tt1<<endl;
+       cout<<"total"<<homo1.size()<<": "<<time_tt3-time_tt1<<endl;
    }
     else if (homo1.size()==3){
-        thread th1(multithread_complementary_GC_checking, ref(subsequences_candidate_1), GC, homo1[0], ref(last_17nt_), ref(complementary_triplets_table_), ref(look_back_window_), ref(weight_1));
+        /*thread th1(multithread_complementary_GC_checking, ref(subsequences_candidate_1), GC, homo1[0], ref(last_17nt_), ref(complementary_triplets_table_), ref(look_back_window_), ref(weight_1));
         thread th2(multithread_complementary_GC_checking, ref(subsequences_candidate_2), GC, homo1[1], ref(last_17nt_), ref(complementary_triplets_table_), ref(look_back_window_), ref(weight_2));
         thread th3(multithread_complementary_GC_checking, ref(subsequences_candidate_3), GC, homo1[2], ref(last_17nt_), ref(complementary_triplets_table_), ref(look_back_window_), ref(weight_3));
         th1.join();
         th2.join();
-        th3.join();
+        th3.join();*/
     }
     else if (homo1.size()==2){
-        thread th1(multithread_complementary_GC_checking, ref(subsequences_candidate_1), GC, homo1[0], ref(last_17nt_), ref(complementary_triplets_table_), ref(look_back_window_), ref(weight_1));
+       /* thread th1(multithread_complementary_GC_checking, ref(subsequences_candidate_1), GC, homo1[0], ref(last_17nt_), ref(complementary_triplets_table_), ref(look_back_window_), ref(weight_1));
         thread th2(multithread_complementary_GC_checking, ref(subsequences_candidate_2), GC, homo1[1], ref(last_17nt_), ref(complementary_triplets_table_), ref(look_back_window_), ref(weight_2));
         th1.join();
-        th2.join();
+        th2.join();*/
     } else {
-        thread th1(multithread_complementary_GC_checking, ref(subsequences_candidate_1), GC, homo1[0], ref(last_17nt_), ref(complementary_triplets_table_), ref(look_back_window_), ref(weight_1));
-        th1.join();
+      /*  thread th1(multithread_complementary_GC_checking, ref(subsequences_candidate_1), GC, homo1[0], ref(last_17nt_), ref(complementary_triplets_table_), ref(look_back_window_), ref(weight_1));
+        th1.join();*/
     }
 
     if (homo1.size()==4){
@@ -633,7 +647,7 @@ string DNA_encoder::multithread_partial_search_triplets(int bits_triplet) {
         subsequences_of_each_candidates.emplace(homo1[2],subsequences_candidate_3);
         subsequences_of_each_candidates.emplace(homo1[3],subsequences_candidate_4);
     }
-    else if (homo1.size()==3){
+   /* else if (homo1.size()==3){
         all_triplet_candidates_and_score.emplace_back(make_pair(weight_1,homo1[0]));
         all_triplet_candidates_and_score.emplace_back(make_pair(weight_2,homo1[1]));
         all_triplet_candidates_and_score.emplace_back(make_pair(weight_3,homo1[2]));
@@ -652,7 +666,7 @@ string DNA_encoder::multithread_partial_search_triplets(int bits_triplet) {
         all_triplet_candidates_and_score.emplace_back(make_pair(weight_1,homo1[0]));
 
         subsequences_of_each_candidates.emplace(homo1[0],subsequences_candidate_1);
-    }
+    }*/
 
     sort(all_triplet_candidates_and_score.begin(), all_triplet_candidates_and_score.end());
 
@@ -774,9 +788,9 @@ string DNA_encoder::partial_search_triplets(int bits_triplet) {
         if (s=='G' || s=='C') GC++;
     }
 
-    clock_t time_tt1, time_tt2;
+    //clock_t time_tt1, time_tt2;
 
-    time_tt1 = clock();
+    //time_tt1 = clock();
     for (auto candidate:homo1){
 
 
@@ -877,8 +891,8 @@ string DNA_encoder::partial_search_triplets(int bits_triplet) {
         all_triplet_candidates_and_score.emplace_back(make_pair(weight,candidate));
         subsequences_of_each_candidates.emplace(candidate,subsequences);
     }
-        time_tt2 = clock();
-        cout<<"total "<<homo1.size()<<": "<<time_tt2-time_tt1<<endl;
+        //time_tt2 = clock();
+        //cout<<"total "<<homo1.size()<<": "<<time_tt2-time_tt1<<endl;
 
     sort(all_triplet_candidates_and_score.begin(), all_triplet_candidates_and_score.end());
 
@@ -1035,8 +1049,8 @@ string DNA_encoder::heuristic_encoding(string digital_data) {
                 if (g_encoding_scheme==5)
                     result+=exhaustive_search_triplets(base8_num[i]);
                 if (g_encoding_scheme==6)
-                    result+=multithread_partial_search_triplets(base8_num[i]);
-                    //result+=partial_search_triplets(base8_num[i]);
+                    //result+=multithread_partial_search_triplets(base8_num[i]);
+                    result+=partial_search_triplets(base8_num[i]);
             }
         }
 

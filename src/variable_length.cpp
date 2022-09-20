@@ -45,6 +45,25 @@ bool VariableLength::IsBlindSpot(unsigned int distance) {
     return blind_spot[distance];
 }
 
+bool Homopolymers(string primer) {
+    char last_one = primer[0];
+    int max_length_of_homo=1;
+    int cur_length_of_homo=1;
+
+    for (int i = 1; i < 4; ++i) {
+        if(primer[i] == last_one){
+            cur_length_of_homo++;
+            if(cur_length_of_homo>max_length_of_homo)
+            {
+                max_length_of_homo = cur_length_of_homo;
+            }
+        }
+        else  cur_length_of_homo = 1;
+        last_one = primer[i];
+    }
+    return max_length_of_homo;
+}
+
 void VariableLength::ReadCollisions(string path) {
     cout << "VarLen: Processing " << path << endl;
     strand_id2name.clear();
@@ -57,8 +76,21 @@ void VariableLength::ReadCollisions(string path) {
     myfile.open(path);
     string line;
 
-    while(getline(myfile, line)) {
+    // read all primer library in
+    ifstream primer_library;
+    primer_library.open("/home/eason/CLionProjects/Primer-payload-collision/primer28K");
+    unordered_map<PrimerID, string> primerlibrary;
 
+    while (getline(primer_library, line)){
+        PrimerID primer_id;
+        primer_id = stoul(line.substr(7));
+
+        getline(primer_library, line);
+        primerlibrary.emplace(primer_id,line);
+    }
+
+
+    while(getline(myfile, line)) {
         istringstream iss(line);
         string current_field;
         // line example:
@@ -90,6 +122,11 @@ void VariableLength::ReadCollisions(string path) {
         } else{
             primer_collision_num_.find(primer_id)->second++;
         }
+
+        // delete all collided primers leave remaining usable primers
+        if (primerlibrary.find(primer_id)!=primerlibrary.end())
+            primerlibrary.erase(primer_id);
+
 
         // read collsion position
         for (int i = 0; i < 6; i++) {
@@ -142,7 +179,18 @@ void VariableLength::ReadCollisions(string path) {
     assert(primer_id2name.size() == primer_name2id.size());
     n_strand += strand_id2name.size();
     n_primer = all_primers.size();
+
+    //analysis remaining usable primers
+    int no_homo_primer=0;
+    for (auto n:primerlibrary){
+        if (Homopolymers(n.second)==1) no_homo_primer++;
+    }
+    cout<<no_homo_primer<<endl;
+    cout<<primerlibrary.size()<<endl;
+    cout<<no_homo_primer/(primerlibrary.size()*1.0)<<endl;
 }
+
+
 
 bool sortbyfirst_asending(const pair<int,PrimerID> &a, const pair<int,PrimerID> &b){
     return a.first<b.first;
@@ -175,6 +223,10 @@ void VariableLength::Cut() {
     primer_collision_num.close();
     cout<<"total collision: "<<total_collision_num<<"  collided primer: "<<total_collided_primer<<endl;
     cout<<"avg collision per primer: "<<total_collision_num/(1.0*total_collided_primer)<<endl;
+
+
+
+
 
      /*
     int ideal_capacity = 1.55*1000000*200/2; //devide by 2 since it's a primer not a primer pair
