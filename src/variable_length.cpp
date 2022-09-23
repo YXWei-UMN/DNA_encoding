@@ -89,7 +89,9 @@ void VariableLength::ReadCollisions(string path) {
         primerlibrary.emplace(primer_id,line);
     }
 
+    cout<<primerlibrary.size()<<endl;
 
+    bool if_checked = false;
     while(getline(myfile, line)) {
         istringstream iss(line);
         string current_field;
@@ -101,6 +103,7 @@ void VariableLength::ReadCollisions(string path) {
             if (current_field == "Query:") {
                 iss >> current_field;
                 all_primers.insert(current_field);
+                if_checked= true;
             }
             continue;
         }
@@ -124,8 +127,18 @@ void VariableLength::ReadCollisions(string path) {
         }
 
         // delete all collided primers leave remaining usable primers
-        if (primerlibrary.find(primer_id)!=primerlibrary.end())
-            primerlibrary.erase(primer_id);
+
+        if (if_checked){
+            cout<<primerlibrary.size()<<endl;
+            if (primerlibrary.find(primer_id)!=primerlibrary.end()){
+                cout<<"find and delete "<<primer_id<<endl;
+                primerlibrary.erase(primer_id);
+            } else cout<<"not find primer "<<primer_id<<endl;
+
+            if_checked=false;
+        }
+
+
 
 
         // read collsion position
