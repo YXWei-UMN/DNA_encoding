@@ -76,7 +76,7 @@ void VariableLength::ReadCollisions(string path) {
     myfile.open(path);
     string line;
 
-    // read all primer library in
+    /*// read all primer library in
     ifstream primer_library;
     primer_library.open("/home/eason/CLionProjects/Primer-payload-collision/primer28K");
     unordered_map<PrimerID, string> primerlibrary;
@@ -87,9 +87,7 @@ void VariableLength::ReadCollisions(string path) {
 
         getline(primer_library, line);
         primerlibrary.emplace(primer_id,line);
-    }
-
-    cout<<primerlibrary.size()<<endl;
+    }*/
 
     bool if_checked = false;
     while(getline(myfile, line)) {
@@ -125,20 +123,6 @@ void VariableLength::ReadCollisions(string path) {
         } else{
             primer_collision_num_.find(primer_id)->second++;
         }
-
-        // delete all collided primers leave remaining usable primers
-
-        if (if_checked){
-            cout<<primerlibrary.size()<<endl;
-            if (primerlibrary.find(primer_id)!=primerlibrary.end()){
-                cout<<"find and delete "<<primer_id<<endl;
-                primerlibrary.erase(primer_id);
-            } else cout<<"not find primer "<<primer_id<<endl;
-
-            if_checked=false;
-        }
-
-
 
 
         // read collsion position
@@ -192,15 +176,6 @@ void VariableLength::ReadCollisions(string path) {
     assert(primer_id2name.size() == primer_name2id.size());
     n_strand += strand_id2name.size();
     n_primer = all_primers.size();
-
-    //analysis remaining usable primers
-    int no_homo_primer=0;
-    for (auto n:primerlibrary){
-        if (Homopolymers(n.second)==1) no_homo_primer++;
-    }
-    cout<<no_homo_primer<<endl;
-    cout<<primerlibrary.size()<<endl;
-    cout<<no_homo_primer/(primerlibrary.size()*1.0)<<endl;
 }
 
 
@@ -235,14 +210,10 @@ void VariableLength::Cut() {
         primer_collision_num<<i<<","<<primer_distribution[i]<<endl;
     }
     primer_collision_num.close();
-    cout<<"total collision: "<<total_collision_num<<"  collided primer: "<<total_collided_primer<<endl;
-    cout<<"avg collision per primer: "<<total_collision_num/(1.0*total_collided_primer)<<endl;
+    /*cout<<"total collision: "<<total_collision_num<<"  collided primer: "<<total_collided_primer<<endl;
+    cout<<"avg collision per primer: "<<total_collision_num/(1.0*total_collided_primer)<<endl;*/
 
 
-
-
-
-     /*
     int ideal_capacity = 1.55*1000000*200/2; //devide by 2 since it's a primer not a primer pair
     for (auto it : primer_collision_num_){
         double capacity = ideal_capacity - it.second*4*100; // we are using 64GB, collision num * 4 to scale to 200+GB
@@ -301,7 +272,6 @@ void VariableLength::Cut() {
     }
 
     PrintStatistics(total_collided_primer);
-     */
 }
 
 void VariableLength::PrintStatistics(int total_collided_primer) {
