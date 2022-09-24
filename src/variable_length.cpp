@@ -189,6 +189,8 @@ bool sortbyfirst_descending(const pair<int,PrimerID> &a, const pair<int,PrimerID
 }
 
 void VariableLength::Cut() {
+    int total_loss=0;
+
     for (int i = 0; i < all_files.size(); i++) {
         ReadCollisions(all_files[i]);
     }
@@ -213,9 +215,10 @@ void VariableLength::Cut() {
     cout<<"avg collision per primer: "<<total_collision_num/(1.0*total_collided_primer)<<endl;*/
 
 
-    int ideal_capacity = 1.55*1000000*200/2; //devide by 2 since it's a primer not a primer pair
+    int ideal_capacity = 1.55*1000000*198/2; //devide by 2 since it's a primer not a primer pair
     for (auto it : primer_collision_num_){
         double capacity = ideal_capacity - it.second*4*100; // we are using 64GB, collision num * 4 to scale to 200+GB
+
         capacity/=1024; // in case overflow
         if (capacity<0){
             discarded_primers.insert(it.first);
@@ -261,7 +264,7 @@ void VariableLength::Cut() {
         if(discarded_primers.find(current_primer_id) != discarded_primers.end()) {
             continue;
         }
-
+        total_loss += primer_collision_num_.find(current_primer_id)->second;
         // recover current primer = push its conflict to discarded
         unordered_set<PrimerID> &conflicts = primer_confilct_list[current_primer_id];
 
@@ -270,6 +273,7 @@ void VariableLength::Cut() {
         }
     }
 
+    cout<<"total cut collisions = "<<total_loss<<endl;
     PrintStatistics(total_collided_primer);
 }
 
@@ -289,7 +293,7 @@ void VariableLength::PrintStatistics(int total_collided_primer) {
             recovered_capacity+=i.second;
         }
     }
-    recovered_capacity = recovered_capacity*1.57/8/1024/1024; // has devided by 1024*1024 already in case of over flow
+    recovered_capacity = recovered_capacity*1.57/8/1024/1024; // has devided by 1024 already in case of over flow
     cout<<"recovered_capacity = " << recovered_capacity<<endl;
 
 
