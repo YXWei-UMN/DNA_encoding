@@ -196,36 +196,9 @@ void VariableLength::Cut() {
     }
     int total_collided_primer = primer_collision_num_.size();
 
-    long long total_collision_num=0;
-
-    ofstream primer_collision_num;
-    primer_collision_num.open ("primer_collision_num.csv",ios::out | ios::trunc);
-    vector<int> primer_distribution(200010,0);
-    for(auto n:primer_collision_num_){
-        int collision_num = n.second;
-        total_collision_num+=collision_num;
-        primer_distribution[collision_num]++;
-    }
-
-    for(int i=0; i < primer_distribution.size(); i++){
-        primer_collision_num<<i<<","<<primer_distribution[i]<<endl;
-    }
-    primer_collision_num.close();
     /*cout<<"total collision: "<<total_collision_num<<"  collided primer: "<<total_collided_primer<<endl;
     cout<<"avg collision per primer: "<<total_collision_num/(1.0*total_collided_primer)<<endl;*/
 
-
-    int ideal_capacity = 1.55*1000000*198/2; //devide by 2 since it's a primer not a primer pair
-    for (auto it : primer_collision_num_){
-        double capacity = ideal_capacity - it.second*4*100; // we are using 64GB, collision num * 4 to scale to 200+GB
-
-        capacity/=1024; // in case overflow
-        if (capacity<0){
-            discarded_primers.insert(it.first);
-            continue;
-        }
-        primer_capacity_.emplace(it.first,capacity);
-    }
 
     // prescreen self-confict primers / capacity < 0
     for (auto it = discarded_primers.begin(); it != discarded_primers.end(); it++) {
@@ -286,15 +259,4 @@ void VariableLength::PrintStatistics(int total_collided_primer) {
     cout << "n[free, recovered, discarded] = " << n_free << ' ' << n_recovered << ' ' << n_discarded << endl << flush;
     cout << "Available primer ratio before VarLen = " << (double)n_free/n_primer << endl << flush;
     cout << "Available primer ratio after VarLen = " << (double)(n_free+n_recovered)/n_primer << endl << flush;
-
-    double recovered_capacity=0;
-    for (auto i:primer_capacity_) {
-        if (discarded_primers.find(i.first)==discarded_primers.end()){
-            recovered_capacity+=i.second;
-        }
-    }
-    recovered_capacity = recovered_capacity*1.57/8/1024/1024; // has devided by 1024 already in case of over flow
-    cout<<"recovered_capacity = " << recovered_capacity<<endl;
-
-
 }
