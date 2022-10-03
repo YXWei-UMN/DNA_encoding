@@ -32,6 +32,7 @@ public:
     unordered_set<PrimerID> get_discarded_primers() const{ return discarded_primers;}
 
 private:
+    long total_collision_num=0;
     vector<bool> blind_spot;
     bool IsBlindSpot(unsigned int distance);
     void ReadCollisions(string path); // read the blast collision result of a single file
