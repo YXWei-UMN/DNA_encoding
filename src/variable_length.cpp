@@ -89,7 +89,7 @@ void VariableLength::ReadCollisions(string path) {
         primerlibrary.emplace(primer_id,line);
     }*/
 
-    bool if_checked = false;
+
     while(getline(myfile, line)) {
         istringstream iss(line);
         string current_field;
@@ -101,11 +101,10 @@ void VariableLength::ReadCollisions(string path) {
             if (current_field == "Query:") {
                 iss >> current_field;
                 all_primers.insert(current_field);
-                if_checked= true;
             }
             continue;
         }
-
+        total_collision_num++;
         string primer_name;
         string strand_name;
         PrimerID primer_id;
@@ -196,8 +195,8 @@ void VariableLength::Cut() {
     }
     int total_collided_primer = primer_collision_num_.size();
 
-    /*cout<<"total collision: "<<total_collision_num<<"  collided primer: "<<total_collided_primer<<endl;
-    cout<<"avg collision per primer: "<<total_collision_num/(1.0*total_collided_primer)<<endl;*/
+    cout<<"total collision: "<<total_collision_num<<"  collided primer: "<<total_collided_primer<<endl;
+    cout<<"avg collision per primer: "<<total_collision_num/(1.0*total_collided_primer)<<endl;
 
 
     // prescreen self-confict primers / capacity < 0
