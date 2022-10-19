@@ -9,7 +9,7 @@
  string g_blast_result_path_2;
  string g_blast_result_path_3;
  string g_blast_result_path_4;
-
+string g_len_group;
 string g_blast_result_path_varlen;
 
 string g_data_path;
@@ -44,6 +44,9 @@ int Parse(string cfgfile){
         switch(hash_(key.c_str())){
             case hash_("data_path"):
                 g_data_path = value;
+                break;
+            case hash_("len_group"):
+                g_len_group = value;
                 break;
             case hash_("blast_result_path_1"):
                 g_blast_result_path_1 = value;

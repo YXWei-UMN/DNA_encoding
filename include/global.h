@@ -45,6 +45,7 @@ extern string g_blast_result_path_4;
 
 extern string g_blast_result_path_varlen;
 
+extern string g_len_group;
 
 extern bool g_if_chunk;
 extern bool g_if_pre_stranding;
