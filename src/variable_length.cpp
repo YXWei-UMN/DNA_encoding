@@ -20,28 +20,113 @@ VariableLength::VariableLength(string path) {
     all_files = listFiles(path, true);
     cout << "The number of files: " << all_files.size() << endl;
 
+    vector<int> combinations_strand400_4len = {300,310,360,400,600,610,620,660,670,700,710,720,760,800,900,910,920,930,960,970,980,1000,1010,1020,1030,1060,1070,1080,1100,1110,1120,1160,1200,1210,1220,1230,1240,1260,1270,1280,1290,1300,1310,1320,1330,1340,1360,1370,1380,1390,1400,1410,1420,1430,1440,1460,1470,1480,1500};
+    vector<int> combinations_strand400_8len = {300,310,340,360,370,380,390,400,600,610,620,640,650,660,670,680,690,700,710,720,730,740,750,760,770,780,790,800,900};
+
+    vector<int> combinations_strand800_4len = {610,620,690,800,1220,1230,1240,1300,1310,1380,1410,1420,1490,1600,1830,1840,1850,1860,1910,1920,1930,1990,2000,2020,2030,2040,2070,2100,2110,2180,2210,2220,2290,2400,2440,2450,2460,2470,2480,2520,2530,2540,2550,2600,2610,2620,2630,2640,2650,2660,2680,2690,2710,2720,2730,2760,2790,2800,2820,2830,2840,2870,2900,2910,2980,3010,3020,3050,3060,3070,3080,3090,3100,3130,3140,3150,3160,3170,3200,3210,3220,3230,3240,3250,3260,3270,3280,3290,3300,3310,3320,3330,3340,3350,3370,3380,3400,3410,3420,3430,3440,3450,3460,3480,3490,3510,3520,3530,3560,3590,3600,3620,3630,3640,3660,3670,3680,3690,3700,3710,3720,3740,3750,3760,3770,3780,3790,3810,3820,3830,3840,3850,3860,3870,3880,3890,3900,3910,3920,3930,3940,3950,3960,3970,3980,3990,4000,4010,4020,4030,4040,4050,4060,4070,4080,4090,4100,4110,4120,4130,4140,4150,4170,4180,4200};
+    vector<int> combinations_strand800_8len = {600,610,640,660,750,760,790,800,1200,1210,1220,1240,1250,1260,1270,1280,1300,1320,1350,1360,1370,1390,1400,1410,1420,1430,1440,1450,1460,1500,1510,1520,1540,1550,1560,1580,1590,1600,1800};
+
+    if (g_len_group=="400_4"){
+        for (int i = 0;i<=150;i++){
+            blind_spot.push_back(true);
+        }
+        for (auto n:combinations_strand400_4len){
+            blind_spot[n/10]=false;
+        }
+    }else if (g_len_group=="400_8"){
+        for (int i = 0;i<=90;i++){
+            blind_spot.push_back(true);
+        }
+        for (auto n:combinations_strand400_4len){
+            blind_spot[n/10]=false;
+        }
+    } else if (g_len_group=="800_4"){
+        for (int i = 0;i<=420;i++){
+            blind_spot.push_back(true);
+        }
+        for (auto n:combinations_strand400_4len){
+            blind_spot[n/10]=false;
+        }
+    }else if (g_len_group=="800_8"){
+        for (int i = 0;i<=180;i++){
+            blind_spot.push_back(true);
+        }
+        for (auto n:combinations_strand400_4len){
+            blind_spot[n/10]=false;
+        }
+    } else cout<<"what len group?"<<endl;
+
     //Initialize blind spot
-    for (int i = 0;i<=44;i++){
-        blind_spot.push_back(false);
-    }
-    for (int i=1;i<=14;i++){
-        blind_spot[i]=true;
-    }
-    blind_spot[17]=true;
-    blind_spot[18]=true;
-    for (int i=21;i<=29;i++){
-        blind_spot[i]=true;
-    }
-    blind_spot[33]=true;
-    blind_spot[37]=true;
-    for (int i=41;i<=44;i++){
-        blind_spot[i]=true;
-    }
+
+
+    /*blind_spot[30]=false;
+    blind_spot[31]=false;
+    blind_spot[36]=false;
+    blind_spot[40]=false;
+    blind_spot[60]=false;
+    blind_spot[61]=false;
+    blind_spot[62]=false;
+    blind_spot[66]=false;
+    blind_spot[67]=false;
+    blind_spot[70]=false;
+    blind_spot[71]=false;
+    blind_spot[72]=false;
+    blind_spot[76]=false;
+    blind_spot[80]=false;
+    blind_spot[90]=false;
+    blind_spot[91]=false;
+
+    blind_spot[92]=false;
+    blind_spot[93]=false;
+    blind_spot[96]=false;
+    blind_spot[97]=false;
+    blind_spot[98]=false;
+    blind_spot[100]=false;
+    blind_spot[101]=false;
+    blind_spot[102]=false;
+    blind_spot[103]=false;
+    blind_spot[106]=false;
+    blind_spot[107]=false;
+    blind_spot[108]=false;
+    blind_spot[110]=false;
+    blind_spot[111]=false;
+    blind_spot[112]=false;
+    blind_spot[116]=false;
+
+    blind_spot[120]=false;
+    blind_spot[121]=false;
+    blind_spot[122]=false;
+    blind_spot[123]=false;
+    blind_spot[124]=false;
+    blind_spot[126]=false;
+    blind_spot[127]=false;
+    blind_spot[128]=false;
+    blind_spot[129]=false;
+    blind_spot[130]=false;
+    blind_spot[131]=false;
+    blind_spot[132]=false;
+    blind_spot[133]=false;
+    blind_spot[134]=false;
+    blind_spot[136]=false;
+    blind_spot[137]=false;
+
+    blind_spot[138]=false;
+    blind_spot[139]=false;
+    blind_spot[140]=false;
+    blind_spot[141]=false;
+    blind_spot[142]=false;
+    blind_spot[143]=false;
+    blind_spot[144]=false;
+    blind_spot[146]=false;
+    blind_spot[147]=false;
+    blind_spot[148]=false;
+    blind_spot[150]=false;*/
 
 }
 
 bool VariableLength::IsBlindSpot(unsigned int distance) {
-    if (distance >= 45) return false;
+    // blind spot start from 0, the size should minus 1
+    if (distance >= blind_spot.size()-1) return false;
     return blind_spot[distance];
 }
 
@@ -206,6 +291,8 @@ void VariableLength::Cut() {
         primer_capacity_.erase(*it);
     }
 
+
+
     if (g_var_len_algorithm==1){
         for (auto it : primer_collision_num_){
             primer_process_order.push_back(make_pair(it.second, it.first));
@@ -230,11 +317,17 @@ void VariableLength::Cut() {
         sort(primer_process_order.begin(), primer_process_order.end(),sortbyfirst_descending);
     }
 
+    //prescreen primers with too many collisions
+
     for (int i = 0; i < primer_process_order.size(); i++) {
         PrimerID current_primer_id = primer_process_order[i].second;
 
         if(discarded_primers.find(current_primer_id) != discarded_primers.end()) {
             continue;
+        }
+        if (primer_collision_num_.find(current_primer_id)==primer_collision_num_.end()){
+            cout<<"weird"<<endl; //todo: why cannot find the primer 0
+
         }
         total_loss += primer_collision_num_.find(current_primer_id)->second;
         // recover current primer = push its conflict to discarded
