@@ -37,21 +37,21 @@ VariableLength::VariableLength(string path) {
         for (int i = 0;i<=90;i++){
             blind_spot.push_back(true);
         }
-        for (auto n:combinations_strand400_4len){
+        for (auto n:combinations_strand400_8len){
             blind_spot[n/10]=false;
         }
     } else if (g_len_group=="800_4"){
         for (int i = 0;i<=420;i++){
             blind_spot.push_back(true);
         }
-        for (auto n:combinations_strand400_4len){
+        for (auto n:combinations_strand800_4len){
             blind_spot[n/10]=false;
         }
     }else if (g_len_group=="800_8"){
         for (int i = 0;i<=180;i++){
             blind_spot.push_back(true);
         }
-        for (auto n:combinations_strand400_4len){
+        for (auto n:combinations_strand800_8len){
             blind_spot[n/10]=false;
         }
     } else cout<<"what len group?"<<endl;
