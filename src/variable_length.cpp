@@ -26,35 +26,49 @@ VariableLength::VariableLength(string path) {
     vector<int> combinations_strand800_4len = {610,620,690,800,1220,1230,1240,1300,1310,1380,1410,1420,1490,1600,1830,1840,1850,1860,1910,1920,1930,1990,2000,2020,2030,2040,2070,2100,2110,2180,2210,2220,2290,2400,2440,2450,2460,2470,2480,2520,2530,2540,2550,2600,2610,2620,2630,2640,2650,2660,2680,2690,2710,2720,2730,2760,2790,2800,2820,2830,2840,2870,2900,2910,2980,3010,3020,3050,3060,3070,3080,3090,3100,3130,3140,3150,3160,3170,3200,3210,3220,3230,3240,3250,3260,3270,3280,3290,3300,3310,3320,3330,3340,3350,3370,3380,3400,3410,3420,3430,3440,3450,3460,3480,3490,3510,3520,3530,3560,3590,3600,3620,3630,3640,3660,3670,3680,3690,3700,3710,3720,3740,3750,3760,3770,3780,3790,3810,3820,3830,3840,3850,3860,3870,3880,3890,3900,3910,3920,3930,3940,3950,3960,3970,3980,3990,4000,4010,4020,4030,4040,4050,4060,4070,4080,4090,4100,4110,4120,4130,4140,4150,4170,4180,4200};
     vector<int> combinations_strand800_8len = {600,610,640,660,750,760,790,800,1200,1210,1220,1240,1250,1260,1270,1280,1300,1320,1350,1360,1370,1390,1400,1410,1420,1430,1440,1450,1460,1500,1510,1520,1540,1550,1560,1580,1590,1600,1800};
 
-    if (g_len_group=="400_4"){
-        for (int i = 0;i<=150;i++){
-            blind_spot.push_back(true);
-        }
-        for (auto n:combinations_strand400_4len){
-            blind_spot[n/10]=false;
-        }
-    }else if (g_len_group=="400_8"){
-        for (int i = 0;i<=90;i++){
-            blind_spot.push_back(true);
-        }
-        for (auto n:combinations_strand400_8len){
-            blind_spot[n/10]=false;
-        }
-    } else if (g_len_group=="800_4"){
-        for (int i = 0;i<=420;i++){
-            blind_spot.push_back(true);
-        }
-        for (auto n:combinations_strand800_4len){
-            blind_spot[n/10]=false;
-        }
-    }else if (g_len_group=="800_8"){
-        for (int i = 0;i<=180;i++){
-            blind_spot.push_back(true);
-        }
-        for (auto n:combinations_strand800_8len){
-            blind_spot[n/10]=false;
-        }
-    } else cout<<"what len group?"<<endl;
+    vector<int> *coms = &combinations_strand400_4len;;
+    if (g_len_group=="400_4") coms = &combinations_strand400_4len;
+    else if (g_len_group=="400_8") coms = &combinations_strand400_8len;
+    else if (g_len_group=="800_4") coms = &combinations_strand800_4len;
+    else if (g_len_group=="800_8") coms = & combinations_strand800_8len;
+    else cerr << "what len group?" << endl << flush;
+
+    blind_spot = vector<bool>(coms->back()/10, true);
+    for (int n: (*coms)) {
+        blind_spot[n/10]=false;
+    }
+
+
+    // if (g_len_group=="400_4"){
+    //     // blind_spot = vector<bool>(combinations_strand400_4len.back()/10, true);
+    //     for (int i = 0;i<=150;i++){
+    //         blind_spot.push_back(true);
+    //     }
+    //     for (auto n:combinations_strand400_4len){
+    //         blind_spot[n/10]=false;
+    //     }
+    // }else if (g_len_group=="400_8"){
+    //     for (int i = 0;i<=90;i++){
+    //         blind_spot.push_back(true);
+    //     }
+    //     for (auto n:combinations_strand400_8len){
+    //         blind_spot[n/10]=false;
+    //     }
+    // } else if (g_len_group=="800_4"){
+    //     for (int i = 0;i<=420;i++){
+    //         blind_spot.push_back(true);
+    //     }
+    //     for (auto n:combinations_strand800_4len){
+    //         blind_spot[n/10]=false;
+    //     }
+    // }else if (g_len_group=="800_8"){
+    //     for (int i = 0;i<=180;i++){
+    //         blind_spot.push_back(true);
+    //     }
+    //     for (auto n:combinations_strand800_8len){
+    //         blind_spot[n/10]=false;
+    //     }
+    // } else cout<<"what len group?"<<endl;
 
     //Initialize blind spot
 
@@ -233,26 +247,32 @@ void VariableLength::ReadCollisions(string path) {
         unsigned int cut = start + (end - start) / 2;
         cut = (int)(cut * 0.1 + 0.5);
         
-        auto &last_collision = collision_linear_order[i-1];
-        StrandID strand_id_last = get<0>(last_collision);
-        if (strand_id_last == strand_id) {
-            unsigned int start_last = get<1>(last_collision);
-            unsigned int end_last = get<2>(last_collision);
-            PrimerID primer_id_last = get<3>(last_collision);
+        int j = i-1;
+        while (j >= 0) {
+            auto &last_collision = collision_linear_order[j];
+            // if ()
+            StrandID strand_id_last = get<0>(last_collision);
+            if (strand_id_last == strand_id) {
+                unsigned int start_last = get<1>(last_collision);
+                unsigned int end_last = get<2>(last_collision);
+                PrimerID primer_id_last = get<3>(last_collision);
 
-            unsigned int cut_last = start_last + (end_last - start_last)/2;
-            cut_last = (int)(cut_last * 0.1 + 0.5);
+                unsigned int cut_last = start_last + (end_last - start_last)/2;
+                cut_last = (int)(cut_last * 0.1 + 0.5);
 
-            assert(cut_last <= cut);
-            if (IsBlindSpot(cut-cut_last)) {
-                if (primer_id_last == primer_id) {
-                    discarded_primers.insert(primer_id);
-                } else {
-                    primer_confilct_list[primer_id].insert(primer_id_last);
-                    primer_confilct_list[primer_id_last].insert(primer_id);
+                assert(cut_last <= cut);
+                if (cut - cut_last > blind_spot.size()-1) break;
+                if (IsBlindSpot(cut-cut_last)) {
+                    if (primer_id_last == primer_id) {
+                        discarded_primers.insert(primer_id);
+                    } else {
+                        primer_confilct_list[primer_id].insert(primer_id_last);
+                        primer_confilct_list[primer_id_last].insert(primer_id);
+                    }
                 }
-            }
 
+            } else break;
+            j--;
         }
     }
 
