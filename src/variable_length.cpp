@@ -138,8 +138,9 @@ VariableLength::VariableLength(string path) {
 
 }
 
-bool VariableLength::IsBlindSpot(unsigned int distance) {
+bool VariableLength::IsBlindSpot(unsigned long long distance) {
     // blind spot start from 0, the size should minus 1
+    //cout<<distance<<" ";
     if (distance >= blind_spot.size()-1) return false;
     return blind_spot[distance];
 }
@@ -240,30 +241,37 @@ void VariableLength::ReadCollisions(string path) {
     for (int i = 1; i < collision_linear_order.size(); i++) {
         auto &cur_collision = collision_linear_order[i];
         StrandID strand_id = get<0>(cur_collision);
-        unsigned int start = get<1>(cur_collision);
-        unsigned int end = get<2>(cur_collision);
-        PrimerID primer_id = get<3>(cur_collision);
+        unsigned long long start = get<1>(cur_collision);
+        unsigned long long end = get<2>(cur_collision);
+        
+	start += strand_id*198;
+       	end += strand_id*198;
+	//cout<<start<<" "<<end<<" |";	
+	PrimerID primer_id = get<3>(cur_collision);
 
-        unsigned int cut = start + (end - start) / 2;
-        cut = (int)(cut * 0.1 + 0.5);
+        unsigned long long cut = start + (end - start) / 2;
+
+        cut = (unsigned long long)(cut * 0.1 + 0.5);
         
         int j = i-1;
         while (j >= 0) {
             auto &last_collision = collision_linear_order[j];
             // if ()
             StrandID strand_id_last = get<0>(last_collision);
-            if (strand_id_last == strand_id) {
-                unsigned int start_last = get<1>(last_collision);
-                unsigned int end_last = get<2>(last_collision);
-                PrimerID primer_id_last = get<3>(last_collision);
+            //if (strand_id_last == strand_id) {
+                unsigned long long start_last = get<1>(last_collision);
+                unsigned long long end_last = get<2>(last_collision);
+                start_last += strand_id_last*198;
+         	end_last += strand_id_last*198;
+		PrimerID primer_id_last = get<3>(last_collision);
 
-                unsigned int cut_last = start_last + (end_last - start_last)/2;
-                cut_last = (int)(cut_last * 0.1 + 0.5);
-
-                assert(cut_last <= cut);
+                unsigned long long cut_last = start_last + (end_last - start_last)/2;
+                cut_last = (unsigned long long)(cut_last * 0.1 + 0.5);
+		//cout<<cut <<" "<<cut_last<<"\t";
+                //assert(cut_last <= cut);
                 if (cut - cut_last > blind_spot.size()-1) break;
-                if (IsBlindSpot(cut-cut_last)) {
-                    if (primer_id_last == primer_id) {
+		if (cut<=cut_last || IsBlindSpot(cut-cut_last)) {
+		     if (primer_id_last == primer_id) {
                         discarded_primers.insert(primer_id);
                     } else {
                         primer_confilct_list[primer_id].insert(primer_id_last);
@@ -271,9 +279,10 @@ void VariableLength::ReadCollisions(string path) {
                     }
                 }
 
-            } else break;
+            //} else break;
             j--;
         }
+	//cout<<endl;
     }
 
     assert(strand_id2name.size() == strand_name2id.size());
