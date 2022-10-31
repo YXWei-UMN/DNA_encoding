@@ -11,6 +11,6 @@ test_config.cfg
 
 /payload_files/
 
-/test*
+/result_dir/test
 
 /src/test.cpp

@@ -289,9 +289,86 @@ void VariableLength::ReadCollisions(string path) {
     assert(primer_id2name.size() == primer_name2id.size());
     n_strand += strand_id2name.size();
     n_primer = all_primers.size();
+
 }
 
+void VariableLength::out_intermidum_result(string out_file_path) {
+    fstream out;
+    out.open(out_file_path,ios::out);
 
+    out<<"collision_begin"<<endl;
+    for (auto n:primer_collision_num_){
+        out<<n.first<<" "<<n.second<<endl;
+    }
+    out<<"collision_end"<<endl;
+    out<<"conflict_begin"<<endl;
+    for (auto m:primer_confilct_list){
+        out<<m.first<<" ";
+        for (auto mm:m.second){
+            out<<mm<<" ";
+        }
+        out<<endl;
+    }
+    out<<"conflict_end"<<endl;
+}
+
+void VariableLength::in_intermidum_result(string out_file_path) {
+
+    vector<string> all_intermidum_results = listFiles(out_file_path, true);
+
+    for (int i = 0; i < all_intermidum_results.size(); i++) {
+        cout<<"read result:"<<all_intermidum_results[i]<<endl;
+        fstream in;
+        string line;
+        in.open(all_intermidum_results[i],ios::in);
+        bool collision_mode=false;
+        bool conflict_mode=false;
+
+
+        while(getline(in, line)) {
+            if (line=="collision_begin") {collision_mode= true; continue;}
+            if (line=="collision_end") {collision_mode= false; continue;}
+            if (line=="conflict_begin") {conflict_mode=true; continue;}
+            if (line=="conflict_end") {conflict_mode=false; continue;}
+
+            if (collision_mode){
+                istringstream iss(line);
+                string current_field;
+                iss >> current_field;
+                int primer_id = stoi(current_field);
+                iss >> current_field;
+                int collision_num = stoi(current_field);
+
+                if (primer_collision_num_.find(primer_id)==primer_collision_num_.end()){
+                    primer_collision_num_.emplace(primer_id,collision_num);
+                } else{
+                    primer_collision_num_[primer_id]+=collision_num;
+                }
+
+            } else if (conflict_mode){
+                istringstream iss(line);
+                string current_field;
+                iss >> current_field;
+                int primer1 = stoi(current_field);
+
+                unordered_set<PrimerID> conflicts;
+
+                if (primer_confilct_list.find(primer1)==primer_confilct_list.end()){
+                    primer_confilct_list.emplace(primer1,conflicts);
+                }
+
+                auto it = primer_confilct_list.find(primer1);
+
+                string primer2;
+                while (iss>>primer2){
+                    it->second.insert(stoi(primer2));
+                }
+
+            } else cout<<"error in read intermidum result"<<endl;
+        }
+    }
+
+}
 
 bool sortbyfirst_asending(const pair<int,PrimerID> &a, const pair<int,PrimerID> &b){
     return a.first<b.first;
@@ -304,71 +381,75 @@ bool sortbyfirst_descending(const pair<int,PrimerID> &a, const pair<int,PrimerID
 void VariableLength::Cut() {
     int total_loss=0;
 
-    for (int i = 0; i < all_files.size(); i++) {
-        ReadCollisions(all_files[i]);
-    }
-    int total_collided_primer = primer_collision_num_.size();
-
-    cout<<"total collision: "<<total_collision_num<<"  collided primer: "<<total_collided_primer<<endl;
-    cout<<"avg collision per primer: "<<total_collision_num/(1.0*total_collided_primer)<<endl;
-
-
-    // prescreen self-confict primers / capacity < 0
-    for (auto it = discarded_primers.begin(); it != discarded_primers.end(); it++) {
-        primer_confilct_list.erase(*it);
-        primer_collision_num_.erase(*it);
-        primer_capacity_.erase(*it);
+    if (g_out_intermedium_results){
+        for (int i = 0; i < all_files.size(); i++) {
+            ReadCollisions(all_files[i]);
+        }
+        int total_collided_primer = primer_collision_num_.size();
+        out_intermidum_result(g_out_varlen_intermedium_result_path);
     }
 
+    if (g_in_intermedium_results){
+        in_intermidum_result(g_in_varlen_intermedium_result_path);
+
+        // prescreen self-confict primers / capacity < 0
+        for (auto it = discarded_primers.begin(); it != discarded_primers.end(); it++) {
+            primer_confilct_list.erase(*it);
+            primer_collision_num_.erase(*it);
+            primer_capacity_.erase(*it);
+        }
 
 
-    if (g_var_len_algorithm==1){
-        for (auto it : primer_collision_num_){
-            primer_process_order.push_back(make_pair(it.second, it.first));
-        }
-        sort(primer_process_order.begin(), primer_process_order.end(),sortbyfirst_asending);
-    } else if (g_var_len_algorithm==2){
-        for (auto it = primer_confilct_list.begin(); it != primer_confilct_list.end(); it++) {
-            primer_process_order.push_back(make_pair(it->second.size(), it->first));
-        }
-        sort(primer_process_order.begin(), primer_process_order.end(),sortbyfirst_asending);
-    } else if (g_var_len_algorithm==3){
-        // calculate capacity diff, push to primer_process_order
-        for (auto it : primer_capacity_){
-            double capacity_diff=it.second;
-            double tmp = capacity_diff;
-            for (auto conflict_primer : primer_confilct_list[it.first]){
-                capacity_diff -= primer_capacity_[conflict_primer];
+
+        if (g_var_len_algorithm==1){
+            for (auto it : primer_collision_num_){
+                primer_process_order.push_back(make_pair(it.second, it.first));
             }
-            if (capacity_diff>tmp) cout<<"large capacity_diff?? overflow"<<endl;
-            primer_process_order.push_back(make_pair(capacity_diff, it.first));
+            sort(primer_process_order.begin(), primer_process_order.end(),sortbyfirst_asending);
+        } else if (g_var_len_algorithm==2){
+            for (auto it = primer_confilct_list.begin(); it != primer_confilct_list.end(); it++) {
+                primer_process_order.push_back(make_pair(it->second.size(), it->first));
+            }
+            sort(primer_process_order.begin(), primer_process_order.end(),sortbyfirst_asending);
+        } else if (g_var_len_algorithm==3){
+            // calculate capacity diff, push to primer_process_order
+            for (auto it : primer_capacity_){
+                double capacity_diff=it.second;
+                double tmp = capacity_diff;
+                for (auto conflict_primer : primer_confilct_list[it.first]){
+                    capacity_diff -= primer_capacity_[conflict_primer];
+                }
+                if (capacity_diff>tmp) cout<<"large capacity_diff?? overflow"<<endl;
+                primer_process_order.push_back(make_pair(capacity_diff, it.first));
+            }
+            sort(primer_process_order.begin(), primer_process_order.end(),sortbyfirst_descending);
         }
-        sort(primer_process_order.begin(), primer_process_order.end(),sortbyfirst_descending);
+
+        //prescreen primers with too many collisions
+
+        for (int i = 0; i < primer_process_order.size(); i++) {
+            PrimerID current_primer_id = primer_process_order[i].second;
+
+            if(discarded_primers.find(current_primer_id) != discarded_primers.end()) {
+                continue;
+            }
+            if (primer_collision_num_.find(current_primer_id)==primer_collision_num_.end()){
+                cout<<"weird"<<endl; //todo: why cannot find the primer 0
+
+            }
+            total_loss += primer_collision_num_.find(current_primer_id)->second;
+            // recover current primer = push its conflict to discarded
+            unordered_set<PrimerID> &conflicts = primer_confilct_list[current_primer_id];
+
+            for (auto it = conflicts.begin(); it != conflicts.end(); it++){
+                discarded_primers.insert(*it);
+            }
+        }
+
+        cout<<"total cut collisions = "<<total_loss<<endl;
+        PrintStatistics(primer_collision_num_.size());
     }
 
-    //prescreen primers with too many collisions
-
-    for (int i = 0; i < primer_process_order.size(); i++) {
-        PrimerID current_primer_id = primer_process_order[i].second;
-
-        if(discarded_primers.find(current_primer_id) != discarded_primers.end()) {
-            continue;
-        }
-        if (primer_collision_num_.find(current_primer_id)==primer_collision_num_.end()){
-            cout<<"weird"<<endl; //todo: why cannot find the primer 0
-
-        }
-        total_loss += primer_collision_num_.find(current_primer_id)->second;
-        // recover current primer = push its conflict to discarded
-        unordered_set<PrimerID> &conflicts = primer_confilct_list[current_primer_id];
-
-        for (auto it = conflicts.begin(); it != conflicts.end(); it++){
-            discarded_primers.insert(*it);
-        }
-    }
-
-    cout<<"total cut collisions = "<<total_loss<<endl;
-    PrintStatistics(total_collided_primer);
 }
 
 void VariableLength::PrintStatistics(int total_collided_primer) {

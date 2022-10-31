@@ -30,7 +30,8 @@ public:
     void PrintStatistics(int total_collided_primers);
     unordered_set<PrimerID> get_recovered_primers() const{ return recovered_primers;}
     unordered_set<PrimerID> get_discarded_primers() const{ return discarded_primers;}
-
+    void out_intermidum_result(string out_file_path);
+    void in_intermidum_result(string in_file_path);
 private:
     long total_collision_num=0;
     vector<bool> blind_spot;

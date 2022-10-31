@@ -37,7 +37,8 @@ using namespace std;
 
 extern string g_data_path;
 extern string g_payload_path;
-
+extern string g_out_varlen_intermedium_result_path;
+extern string g_in_varlen_intermedium_result_path;
 extern string g_blast_result_path_1;
 extern string g_blast_result_path_2;
 extern string g_blast_result_path_3;
@@ -48,6 +49,8 @@ extern string g_blast_result_path_varlen;
 extern string g_len_group;
 
 extern bool g_if_chunk;
+extern bool g_out_intermedium_results;
+extern bool g_in_intermedium_results;
 extern bool g_if_pre_stranding;
 extern bool g_if_ECC;
 extern bool g_if_mapping;
