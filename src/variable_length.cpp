@@ -20,6 +20,12 @@ VariableLength::VariableLength(string path) {
     all_files = listFiles(path, true);
     cout << "The number of files: " << all_files.size() << endl;
 
+    vector<int> combinations_strand200_4len = {150,160,190,200,300,310,320,340,350,360,380,390,400,450};
+    vector<int> combinations_strand200_4len_150_160_180_200 = {150,160,180,200,300,310,320,330,340,350,360,380,400,450,460,470,480,490,500,510,520,530,540,550,560,580,600};
+    vector<int> combinations_strand200_4len_150_170_180_200 = {150,170,180,200,300,320,330,340,350,360,370,380,400,450,470,480,490,500,510,520,530,540,550,560,570,580,600,620};
+    vector<int> combinations_strand200_4len_150_170_190_200 = {150,170,190,200,300,320,340,350,360,370,380,390,400,450,470,490,500,510,520,530,540,550,560,570,580,590,600,620,640};
+    vector<int> combinations_strand200_4len_150_180_190_200 = {150,180,190,200,300,330,340,350,360,370,380,390,400,450,480,490,500,510,520,530,540,550,560,570,580,590,600,630};
+
     vector<int> combinations_strand400_4len = {300,310,360,400,600,610,620,660,670,700,710,720,760,800,900,910,920,930,960,970,980,1000,1010,1020,1030,1060,1070,1080,1100,1110,1120,1160,1200,1210,1220,1230,1240,1260,1270,1280,1290,1300,1310,1320,1330,1340,1360,1370,1380,1390,1400,1410,1420,1430,1440,1460,1470,1480,1500};
     vector<int> combinations_strand400_8len = {300,310,340,360,370,380,390,400,600,610,620,640,650,660,670,680,690,700,710,720,730,740,750,760,770,780,790,800,900};
 
@@ -31,6 +37,11 @@ VariableLength::VariableLength(string path) {
     else if (g_len_group=="400_8") coms = &combinations_strand400_8len;
     else if (g_len_group=="800_4") coms = &combinations_strand800_4len;
     else if (g_len_group=="800_8") coms = & combinations_strand800_8len;
+    else if (g_len_group=="200_4") coms = & combinations_strand200_4len;
+    else if (g_len_group=="150_160_180_200") coms = & combinations_strand200_4len_150_160_180_200;
+    else if (g_len_group=="150_170_180_200") coms = & combinations_strand200_4len_150_170_180_200;
+    else if (g_len_group=="150_170_190_200") coms = & combinations_strand200_4len_150_170_190_200;
+    else if (g_len_group=="150_180_190_200") coms = & combinations_strand200_4len_150_180_190_200;
     else cerr << "what len group?" << endl << flush;
 
     blind_spot = vector<bool>(coms->back()/10, true);
