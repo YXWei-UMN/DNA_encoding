@@ -47,6 +47,9 @@ int Parse(string cfgfile){
             case hash_("in_varlen_intermedium_result_path"):
                 g_in_varlen_intermedium_result_path = value;
                 break;
+            case hash_("if_randomization"):
+                g_if_randomization = (value=="true");
+                break;
             case hash_("out_varlen_intermedium_result_path"):
                 g_out_varlen_intermedium_result_path = value;
                 break;
