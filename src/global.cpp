@@ -11,14 +11,17 @@
  string g_blast_result_path_4;
 string g_len_group;
 string g_blast_result_path_varlen;
-
+string g_out_varlen_intermedium_result_path;
 string g_data_path;
 string g_payload_path;
+string g_in_varlen_intermedium_result_path;
 int g_program;
 bool g_if_mapping;
 bool g_if_randomization;
 bool g_if_pre_stranding;
 bool g_if_ECC;
+bool g_out_intermedium_results;
+bool g_in_intermedium_results;
 int g_encoding_scheme;
 int g_swap_granularity;
 int g_dedup;
@@ -40,8 +43,13 @@ int Parse(string cfgfile){
         string key, value;
         getline(ss, key, ' ');
         getline(ss, value, ' ');
-
         switch(hash_(key.c_str())){
+            case hash_("in_varlen_intermedium_result_path"):
+                g_in_varlen_intermedium_result_path = value;
+                break;
+            case hash_("out_varlen_intermedium_result_path"):
+                g_out_varlen_intermedium_result_path = value;
+                break;
             case hash_("data_path"):
                 g_data_path = value;
                 break;
@@ -72,8 +80,11 @@ int Parse(string cfgfile){
             case hash_("if_ECC"):
                 g_if_ECC = (value=="true");
                 break;
-            case hash_("if_randomization"):
-                g_if_randomization = (value=="true");
+            case hash_("out_intermedium_results"):
+                g_out_intermedium_results = (value=="true");
+                break;
+            case hash_("in_intermedium_results"):
+                g_in_intermedium_results = (value=="true");
                 break;
             case hash_("encoding_scheme"):
                 g_encoding_scheme = stoi(value);
