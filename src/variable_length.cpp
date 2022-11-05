@@ -468,7 +468,7 @@ void VariableLength::PrintStatistics(int total_collided_primer) {
     cout << "n_primer: " << n_primer << endl << flush;
     int n_discarded = discarded_primers.size();
     int n_recovered = total_collided_primer - n_discarded;
-    int n_free = n_primer - n_discarded - n_recovered;
+    int n_free = 28000 - total_collided_primer;
     cout << "n[free, recovered, discarded] = " << n_free << ' ' << n_recovered << ' ' << n_discarded << endl << flush;
     cout << "Available primer ratio before VarLen = " << (double)n_free/n_primer << endl << flush;
     cout << "Available primer ratio after VarLen = " << (double)(n_free+n_recovered)/n_primer << endl << flush;
