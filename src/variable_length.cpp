@@ -337,6 +337,7 @@ void VariableLength::out_intermidum_result(string out_file_path) {
     vector<int> collision_num(15000,0);
 
     for (auto n:primer_collision_num_) {
+        if (n.second/interval>collision_num.size()-1) continue;
         collision_num[n.second/interval]++;
     }
 
