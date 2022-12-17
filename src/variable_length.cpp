@@ -253,7 +253,7 @@ void VariableLength::ReadCollisions(string path) {
 
 
         // read collsion position
-        for (int i = 0; i < 6; i++) {
+       /* for (int i = 0; i < 6; i++) {
             iss >> current_field;
         }
         iss >> current_field;
@@ -261,7 +261,7 @@ void VariableLength::ReadCollisions(string path) {
         iss >> current_field;
         unsigned int strand_end = stoul(current_field);
         if (strand_start > strand_end) swap(strand_start, strand_end);
-        collision_linear_order.push_back(make_tuple(strand_id, strand_start, strand_end, primer_id));
+        collision_linear_order.push_back(make_tuple(strand_id, strand_start, strand_end, primer_id));*/
     }
 /*
     sort(collision_linear_order.begin(), collision_linear_order.end(), CollisionPositionCMP);
@@ -321,15 +321,33 @@ void VariableLength::ReadCollisions(string path) {
 }
 
 void VariableLength::out_intermidum_result(string out_file_path) {
-    fstream out;
+    /*fstream out;
     out.open(out_file_path,ios::out);
 
     out<<"collision_begin"<<endl;
     for (auto n:primer_collision_num_){
-       // out<<n.first<<" "<<n.second<<endl;
-       out<<n.second*12<<endl;
+         out<<n.first<<" "<<n.second<<endl;
     }
-    out<<"collision_end"<<endl;
+    out<<"collision_end"<<endl;*/
+
+    //new added
+    int interval=1;
+    ofstream primer_collision_num;
+    primer_collision_num.open ("primer_collision_num.csv",ios::out | ios::trunc);
+    vector<int> collision_num(15000,0);
+
+    for (auto n:primer_collision_num_) {
+        collision_num[n.second/interval]++;
+    }
+
+    for(int i=0; i < collision_num.size(); i++){
+            // write into file
+        primer_collision_num<<i*interval<<","<<collision_num[i]<<endl;
+    }
+    primer_collision_num.close();
+    //end new added
+
+
  /*   out<<"conflict_begin"<<endl;
     for (auto m:primer_confilct_list){
         out<<m.first<<" ";
