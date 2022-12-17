@@ -263,7 +263,7 @@ void VariableLength::ReadCollisions(string path) {
         if (strand_start > strand_end) swap(strand_start, strand_end);
         collision_linear_order.push_back(make_tuple(strand_id, strand_start, strand_end, primer_id));
     }
-
+/*
     sort(collision_linear_order.begin(), collision_linear_order.end(), CollisionPositionCMP);
 
     for (int i = 1; i < collision_linear_order.size(); i++) {
@@ -312,7 +312,7 @@ void VariableLength::ReadCollisions(string path) {
         }
 	//cout<<endl;
     }
-
+*/
     assert(strand_id2name.size() == strand_name2id.size());
     assert(primer_id2name.size() == primer_name2id.size());
     n_strand += strand_id2name.size();
@@ -326,10 +326,11 @@ void VariableLength::out_intermidum_result(string out_file_path) {
 
     out<<"collision_begin"<<endl;
     for (auto n:primer_collision_num_){
-        out<<n.first<<" "<<n.second<<endl;
+       // out<<n.first<<" "<<n.second<<endl;
+       out<<n.second*12<<endl;
     }
     out<<"collision_end"<<endl;
-    out<<"conflict_begin"<<endl;
+ /*   out<<"conflict_begin"<<endl;
     for (auto m:primer_confilct_list){
         out<<m.first<<" ";
         for (auto mm:m.second){
@@ -338,6 +339,7 @@ void VariableLength::out_intermidum_result(string out_file_path) {
         out<<endl;
     }
     out<<"conflict_end"<<endl;
+*/
 }
 
 void VariableLength::in_intermidum_result(string out_file_path) {
